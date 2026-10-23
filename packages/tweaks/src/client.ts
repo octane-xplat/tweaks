@@ -156,6 +156,7 @@ class Client {
 	// Style sites mount/unmount through the same refcounted machinery; they
 	// carry no runtime value, so mount reports a 0 placeholder.
 	mountStyle(id: string) {
+		this.connect()
 		const entry = this.mounted.get(id)
 		if (entry) entry.count++
 		else {
@@ -178,6 +179,10 @@ class Client {
 	getStyle(id: string): { set: Record<string, StyleValue>; delete: string[] } | null {
 		const s = this.styles[id]
 		return s && s.kind === 'inline' ? s : null
+	}
+
+	getStyleRaw(id: string) {
+		return this.styles[id] ?? null
 	}
 
 	onStyles(listener: () => void): () => void {

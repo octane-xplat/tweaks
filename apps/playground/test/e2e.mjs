@@ -35,7 +35,7 @@ process.on('unhandledRejection', (e) => {
 })
 async function main() {
 	const originalSource = fs.readFileSync(APP_FILE, 'utf8')
-	const dev = spawn('pnpm', ['exec', 'vite', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], {
+	const dev = spawn('pnpm', ['exec', 'vite', '--port', String(PORT), '--strictPort'], {
 		cwd: ROOT,
 		stdio: ['ignore', 'pipe', 'pipe'],
 	})
@@ -62,7 +62,7 @@ async function main() {
 				} catch {}
 			}
 		}, 'registry file')
-		assert.equal(entry.url, `ws://127.0.0.1:${PORT}/__octane_tweaks`)
+		assert.equal(entry.url, `ws://localhost:${PORT}/__octane_tweaks`)
 		console.log('· registry file found:', entry.name)
 
 		// Registry = listening; the first compile can still lag behind.
@@ -95,8 +95,10 @@ async function main() {
 		panel.on('error', () => {})
 		const inbox = []
 		const waiters = []
+		let latest = null
 		panel.on('message', (data) => {
 			const msg = JSON.parse(String(data))
+			if (msg.type === 'state') { latest = msg }
 			const i = waiters.findIndex((w) => w.type === msg.type)
 			if (i >= 0) {
 				waiters.splice(i, 1)[0].resolve(msg)
@@ -217,6 +219,40 @@ async function main() {
 		await page.locator('[data-testid="details.toggle"]').click()
 		await next('state')
 		console.log('· inline style set/add/delete apply; conditional sites unmount')
+
+		// Same-component conditional: flag site toggles in/out of state.styles.
+		const flagSite = 'src/App.tsrx#style:App/Text:3'
+		await page.locator('[data-testid="flag.toggle"]').click()
+		await waitFor(() => latest && !latest.styles.some((e) => e.id === flagSite), 'flag style site unmounts')
+		await page.locator('[data-testid="flag.toggle"]').click()
+		await waitFor(() => latest && latest.styles.some((e) => e.id === flagSite), 'flag style site remounts')
+		console.log('· same-component conditional site toggles in state.styles')
+
+		// 4c. Bamboo preview: set / add nested / delete via the marker observer.
+		const cardSite = 'src/App.style.ts#css:card'
+		await waitFor(() => {
+			const e = latest?.styles.find((x) => x.id === cardSite)
+			return e && e.preview === 'live' ? true : null
+		}, 'bamboo site mounted with live preview')
+		// padding is dominated by vx-view's framework rule (cascade); assert on
+		// backgroundColor which utilities do control.
+		const baseBg = await page.locator('[data-testid="card.box"]').evaluate((el) => globalThis.getComputedStyle(el).backgroundColor)
+		panel.send(JSON.stringify({ type: 'styleSet', id: cardSite, path: ['backgroundColor'], value: 'primary' }))
+		await waitFor(async () => {
+			const v = await page.locator('[data-testid="card.box"]').evaluate((el) => globalThis.getComputedStyle(el).backgroundColor)
+			return v !== baseBg ? true : null
+		}, 'bamboo backgroundColor override applied')
+		panel.send(JSON.stringify({ type: 'styleSet', id: cardSite, path: ['_web', 'color'], value: 'primary' }))
+		await waitFor(async () => {
+			const t = await page.evaluate(() => globalThis.document.getElementById('octane-tweaks-preview')?.textContent ?? '')
+			return t.includes('c_primary') ? true : null
+		}, 'bamboo _web.color compiled into preview css')
+		panel.send(JSON.stringify({ type: 'styleDelete', id: cardSite, path: ['backgroundColor'] }))
+		await waitFor(async () => {
+			const v = await page.locator('[data-testid="card.box"]').evaluate((el) => globalThis.getComputedStyle(el).backgroundColor)
+			return v === baseBg ? true : null
+		}, 'bamboo backgroundColor removed')
+		console.log('· bamboo set/add/delete preview live')
 
 		// 5. Save: counter to 3, save writes the literal, state survives.
 		await page.locator('[data-testid="counter.increment"]').click()

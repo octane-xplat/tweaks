@@ -12,6 +12,8 @@ export interface StyleSite {
 	attribute?: EstreeNode
 	// Enclosing component's body node — transform injects the hook after `{`.
 	componentBody?: EstreeNode
+	// For bamboo sites: the whole `css(...)` CallExpression (wrap target).
+	call?: EstreeNode
 	// Property nodes by path.join('.').
 	propNodes: Map<string, { key: EstreeNode; value: EstreeNode; prop: EstreeNode }>
 }
@@ -187,7 +189,7 @@ function bambooSite(code: string, file: string, call: EstreeNode, args: EstreeNo
 		const id = `${file}#css:css #${n}`
 		return {
 			entry: { id, kind: 'bamboo', file, line: lineOf(code, call.start ?? 0), label: `css #${n}`, properties: [], writable: false, reason: 'multiple arguments' },
-			object: call, propNodes: new Map(),
+			object: call, call, propNodes: new Map(),
 		}
 	}
 	const obj = args[0]
@@ -195,7 +197,7 @@ function bambooSite(code: string, file: string, call: EstreeNode, args: EstreeNo
 		const id = `${file}#css:css #${n}`
 		return {
 			entry: { id, kind: 'bamboo', file, line: lineOf(code, call.start ?? 0), label: `css #${n}`, properties: [], writable: false, reason: 'non-literal argument' },
-			object: call, propNodes: new Map(),
+			object: call, call, propNodes: new Map(),
 		}
 	}
 	// Label: object-literal key when the call is a property value, else const name.
@@ -210,6 +212,6 @@ function bambooSite(code: string, file: string, call: EstreeNode, args: EstreeNo
 	collectPropNodes(obj, propNodes)
 	return {
 		entry: { id, kind: 'bamboo', file, line: lineOf(code, obj.start ?? 0), label, properties: props, writable: !reason, reason },
-		object: obj, propNodes,
+		object: obj, call, propNodes,
 	}
 }

@@ -9,7 +9,7 @@ import path from 'node:path'
 
 const BAMBOO = `import { css } from './styled-system/css'
 export default {
-	card: css({ padding: '20', gap: '12', _hover: { color: 'red' } }),
+	card: css({ padding: '20', gap: '12', _web: { color: 'red' } }),
 	badge: css({ fontSize: '12' }),
 	multi: css({ a: '1' }, { b: '2' }),
 }
@@ -32,7 +32,7 @@ test('extraction: bamboo labels, nested paths, read-only cases', () => {
 	assert.equal(card.entry.label, 'card')
 	assert.ok(card.entry.writable)
 	const paths = card.entry.properties.map((p) => p.path.join('.'))
-	assert.deepEqual(paths, ['padding', 'gap', '_hover.color'])
+	assert.deepEqual(paths, ['padding', 'gap', '_web.color'])
 	assert.equal(card.entry.properties[2].value, 'red')
 	const multi = sites.find((s) => s.entry.label === 'css #3')
 	assert.ok(multi)
@@ -81,19 +81,19 @@ test('writeback: multiline add matches indent + trailing comma', () => {
 	assert.match(out, /gap: '12',\n\tmargin: 5,/)
 })
 
-test('writeback: nested add creates _hover parent; delete drops line', () => {
+test('writeback: nested add creates _web parent; delete drops line', () => {
 	const src = `import { css } from './styled-system/css'
 const o = css({
 	padding: '20',
 	color: 'red'
 })`
 	const { sites } = extractStyles(src, 's.ts')
-	const out = applySplices(src, planStyleEdit(src, sites[0], { set: { '_hover.color': 'blue' }, delete: ['color'] }))
+	const out = applySplices(src, planStyleEdit(src, sites[0], { set: { '_web.color': 'blue' }, delete: ['color'] }))
 	assert.ok(!out.includes("\tcolor: 'red'"))
-	assert.ok(out.includes('_hover'))
+	assert.ok(out.includes('_web'))
 	const re = extractStyles(out, 's.ts').sites[0]
 	const paths = re.entry.properties.map((p) => p.path.join('.'))
-	assert.ok(paths.includes('_hover.color'))
+	assert.ok(paths.includes('_web.color'))
 })
 
 test('writeback: delete inline property removes it', () => {
@@ -125,4 +125,31 @@ test('save: style draft writes source; mismatch aborts whole save', async () => 
 	})
 	assert.equal(res2.ok, false)
 	assert.match(res2.errors[0].message, /no longer found/)
+})
+
+test('bamboo compile parity: unedited object → static class string', async () => {
+	const { compileBambooObject, draftObject } = await import('../src/bamboo.ts')
+	const { sites } = extractStyles(BAMBOO, 'App.style.ts')
+	const bad = await compileBambooObject('/nonexistent-root', { properties: [], draft: { set: {}, delete: [] } })
+	assert.equal(bad, null)
+	// draftObject applies set/delete correctly.
+	const card = sites[0]
+	const obj = draftObject(card.entry.properties, { set: { padding: '10', '_web.color': 'blue' }, delete: ['gap'] })
+	assert.equal(obj.padding, '10')
+	assert.deepEqual(obj._web, { color: 'blue' })
+	assert.equal('gap' in obj, false)
+})
+
+test('bamboo parity: unedited object compiles to the static class string', async () => {
+	const root = path.resolve('apps/playground')
+	if (!fs.existsSync(path.join(root, 'src/App.style.ts'))) return
+	const { compileBambooObject } = await import('../src/bamboo.ts')
+	const code = fs.readFileSync(path.join(root, 'src/App.style.ts'), 'utf8')
+	const { sites } = extractStyles(code, 'src/App.style.ts')
+	const card = sites.find((s) => s.entry.id === 'src/App.style.ts#css:card')
+	if (!card) return
+	const r = await compileBambooObject(root, { properties: card.entry.properties, draft: { set: {}, delete: [] } })
+	assert.ok(r, 'compile should succeed against the playground')
+	// Same class string the static compiler emits for this call (served module).
+	assert.equal(r!.className, 'p_6 bd-w_1 bd-c_primary bg-c_surface _web:c_primary')
 })

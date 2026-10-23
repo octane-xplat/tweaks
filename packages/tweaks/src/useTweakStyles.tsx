@@ -14,6 +14,15 @@ export function useTweakStyles() {
 	const reported = useRef<Set<string>>(new Set())
 	const [, bump] = useState(0)
 
+	// A new render pass starts here: the set must hold only ids rendered THIS
+	// pass, or a site hidden by a same-component conditional never unmounts.
+	rendered.current.clear()
+
+	// Effect deps on a per-render counter: Octane needs a changing dep to run
+	// after every commit.
+	const pass = useRef(0)
+	pass.current += 1
+
 	useEffect(() => {
 		// After every commit, diff this pass's rendered ids against the reported
 		// set — sites behind a false conditional are not mounted.
@@ -25,7 +34,7 @@ export function useTweakStyles() {
 			if (!r.has(id)) client.unmountStyle(id)
 		}
 		reported.current = new Set(r)
-	})
+	}, [pass.current])
 
 	useEffect(() => {
 		const off = client.onStyles(() => bump((n) => n + 1))

@@ -8,6 +8,7 @@ export default {
 		borderWidth: '1',
 		borderColor: 'primary',
 		backgroundColor: 'surface',
+		_web: { color: 'primary' },
 	}),
 	row: css({ display: 'flex', gap: '3', alignItems: 'center' }),
 	button: css({

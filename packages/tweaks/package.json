@@ -35,9 +35,9 @@
 		},
 		"./dev": {
 			"types": "./types/generated/dev.d.ts",
-			"web": "./src/dev.tsx",
-			"native": "./src/dev.tsx",
-			"default": "./src/dev.tsx"
+			"web": "./src/dev.web.ts",
+			"native": "./src/dev.ts",
+			"default": "./src/dev.ts"
 		}
 	},
 	"publishConfig": {

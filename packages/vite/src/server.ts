@@ -34,6 +34,7 @@ export interface ServerDeps {
 	name: string
 	getEntry(id: string): TweakEntry | undefined
 	getStyleEntry(id: string): StyleEntry | undefined
+	compileStyle?(id: string, draft: StyleDraft): Promise<{ className: string; css: string } | null>
 	save(): Promise<SaveReport>
 	log(message: string): void
 }
@@ -59,6 +60,8 @@ export class TweaksServer {
 	readonly overrides = new Map<string, TweakValue>()
 	/** Style drafts per site id; an empty draft means "reverted". */
 	readonly styleDrafts = new Map<string, StyleDraft>()
+	private stylePreviewFailed = new Set<string>()
+	private styleCompiled = new Map<string, { className: string; css: string }>()
 	private saving = false
 	private deps: ServerDeps
 
@@ -90,11 +93,13 @@ export class TweaksServer {
 		}
 		this.sockets.add(socket)
 		if (role === 'app') {
-			this.sendTo(socket, {
-				type: 'values',
-				values: Object.fromEntries(this.overrides),
-				styles: this.styleValuesMessage(),
-			})
+			void this.buildStyleValues().then((styles) =>
+				this.sendTo(socket, {
+					type: 'values',
+					values: Object.fromEntries(this.overrides),
+					styles,
+				}),
+			)
 		} else {
 			this.sendTo(socket, this.stateMessage())
 		}
@@ -152,7 +157,7 @@ export class TweaksServer {
 				return
 			}
 			this.overrides.set(message.id, message.value)
-			this.broadcastValues()
+			void this.asyncBroadcastValues()
 			this.broadcastState()
 		} else if (message.type === 'styleSet') {
 			const entry = this.deps.getStyleEntry(message.id)
@@ -178,7 +183,8 @@ export class TweaksServer {
 			const draft = this.styleDrafts.get(message.id) ?? { set: {}, delete: [] }
 			draft.set[message.path.join('.')] = message.value
 			this.styleDrafts.set(message.id, draft)
-			this.broadcastValues()
+			await this.refreshStyleCompiles()
+			void this.asyncBroadcastValues()
 			this.broadcastState()
 		} else if (message.type === 'styleDelete') {
 			const entry = this.deps.getStyleEntry(message.id)
@@ -201,7 +207,8 @@ export class TweaksServer {
 			if (d.set[key!] !== undefined) delete d.set[key!]
 			else if (!d.delete.includes(key!)) d.delete.push(key!)
 			this.styleDrafts.set(message.id, d)
-			this.broadcastValues()
+			await this.refreshStyleCompiles()
+			void this.asyncBroadcastValues()
 			this.broadcastState()
 		} else if (message.type === 'revert') {
 			// Omitted ids = all dirty overrides, mounted or not — matching Save's scope.
@@ -221,7 +228,7 @@ export class TweaksServer {
 				if (entry && entry.value !== null) this.overrides.set(id, entry.value)
 				else this.overrides.delete(id)
 			}
-			this.broadcastValues()
+			void this.asyncBroadcastValues()
 			this.broadcastState()
 		} else if (message.type === 'save') {
 			if (this.saving) {
@@ -314,7 +321,7 @@ export class TweaksServer {
 				draft,
 				dirty: this.isStyleDirty(id),
 				mountedBy: [...(this.mountedBy.get(id) ?? [])],
-				preview: 'live',
+				preview: entry.kind === 'bamboo' && this.stylePreviewFailed.has(id) ? 'unavailable' : 'live',
 			})
 		}
 		const unmountedDirty: UnmountedDirtyEntry[] = []
@@ -367,24 +374,55 @@ export class TweaksServer {
 		}
 	}
 
-	private styleValuesMessage(): ServerToAppStyles {
+	private async buildStyleValues(): Promise<ServerToAppStyles> {
 		const styles: ServerToAppStyles = {}
 		for (const [id, draft] of this.styleDrafts) {
 			const entry = this.deps.getStyleEntry(id)
-			if (entry?.kind === 'inline') styles[id] = { kind: 'inline', set: draft.set, delete: draft.delete }
+			if (entry?.kind === 'inline') {
+				styles[id] = { kind: 'inline', set: draft.set, delete: draft.delete }
+			} else if (entry?.kind === 'bamboo' && this.deps.compileStyle) {
+				const compiled = this.styleCompiled.get(id)
+				if (compiled && JSON.stringify(compiled) !== '__stale__') {
+					styles[id] = { kind: 'bamboo', className: compiled.className, css: compiled.css }
+				}
+			}
 		}
 		return styles
 	}
 
-	private broadcastValues() {
-		const message: ServerToApp = {
-			type: 'values',
-			values: Object.fromEntries(this.overrides),
-			styles: this.styleValuesMessage(),
+	// Compile dirty bamboo drafts before broadcasting so values carries
+	// {className, css}; a failure marks the site's preview 'unavailable'.
+	private async refreshStyleCompiles() {
+		if (!this.deps.compileStyle) return
+		for (const [id, draft] of this.styleDrafts) {
+			const entry = this.deps.getStyleEntry(id)
+			if (entry?.kind !== 'bamboo') continue
+			const sig = JSON.stringify(draft)
+			const cached = this.styleCompiledSig.get(id)
+			if (cached === sig) continue
+			const result = await this.deps.compileStyle(id, draft)
+			if (result) {
+				this.styleCompiled.set(id, result)
+				this.styleCompiledSig.set(id, sig)
+				this.stylePreviewFailed.delete(id)
+			} else {
+				this.stylePreviewFailed.add(id)
+			}
 		}
-		for (const socket of this.sockets) {
-			if (socket.role === 'app') this.sendTo(socket, message)
-		}
+	}
+	private styleCompiledSig = new Map<string, string>()
+
+	private asyncBroadcastValues() {
+		void this.buildStyleValues().then((styles) => {
+			const message: ServerToApp = {
+				type: 'values',
+				values: Object.fromEntries(this.overrides),
+				styles,
+			}
+			for (const socket of this.sockets) {
+				if (socket.role === 'app') this.sendTo(socket, message)
+			}
+		})
 	}
 
 	private broadcastState() {

@@ -35,6 +35,7 @@ export function App() @{
 
 	const [count, setCount] = useState(0);
 	const [details, setDetails] = useState(true);
+	const [flag, setFlag] = useState(true);
 
 	return (
 		<View className={styles.screen}>
@@ -51,6 +52,11 @@ export function App() @{
 					<Text>{details ? 'hide' : 'show'} details</Text>
 				</Pressable>
 				{details ? <Details /> : null}
+				<Pressable testID="flag.toggle" onPress={() => setFlag(!flag)}>
+					<Text>{flag ? 'hide' : 'show'} flag</Text>
+				</Pressable>
+				{/* Same-component conditional: exercises per-render mount/unmount of a style site. */}
+				{flag ? <Text testID="card.flag" style={{ marginTop: 4 }}>flag</Text> : null}
 			</View>
 			<View className={styles.row}>
 				<Pressable testID="counter.increment" className={styles.button} onPress={() => setCount(count + 1)}>

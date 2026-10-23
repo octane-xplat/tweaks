@@ -5,6 +5,7 @@ import MagicString from 'magic-string'
 import type { TweakEntry } from '@octane-xplat/tweaks/protocol'
 import { extract, type ExtractedTweak } from './extract.ts'
 import { extractStyles, type StyleSite } from './styles.ts'
+import { compileBambooObject } from './bamboo.ts'
 import { contentHash, newToken, removeRegistry, sweepRegistry, writeRegistry } from './registry.ts'
 import { saveOverrides } from './save.ts'
 import { TweaksServer } from './server.ts'
@@ -172,6 +173,11 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 				name: serverName,
 				getEntry: (id) => manifest.get(id)?.entry,
 				getStyleEntry: (id) => styleManifest.get(id)?.entry,
+				compileStyle: async (id, draft) => {
+					const site = styleManifest.get(id)
+					if (!site || site.entry.kind !== 'bamboo') return null
+					return await compileBambooObject(root, { properties: site.entry.properties, draft })
+				},
 				save,
 				log: (m) => server.config.logger.info(m),
 			})
@@ -183,10 +189,15 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 				// that the socket is real, use the actual one for later transforms.
 				fallbackOrigin = `http://127.0.0.1:${port}`
 				sweepRegistry()
+				// Advertise what the socket actually bound: when it is loopback
+				// (127.0.0.1 / ::1) or unspecified, 'localhost' covers whichever
+				// address family the server took.
+				const bound = address && typeof address === 'object' ? address.address : ''
+				const registryHost = bound === '127.0.0.1' || bound === '::1' || bound === '::' || bound === '0.0.0.0' || !bound ? 'localhost' : bound
 				writeRegistry({
 					version: 1,
 					pid: process.pid,
-					url: `ws://127.0.0.1:${port}${TWEAKS_PATH}`,
+					url: `ws://${registryHost}:${port}${TWEAKS_PATH}`,
 					token,
 					name: serverName,
 					root,
@@ -237,11 +248,26 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 				const hasManifestEntries = [...manifest.values()].some((s) => s.entry.file === rel) || [...styleManifest.values()].some((s) => s.entry.file === rel)
 				if (hasManifestEntries || result.tweaks.length || extractStyles(code, rel).sites.length) refreshManifestFromDisk(file)
 				const styles = extractStyles(code, rel, { bambooCssModules: options.bambooCssModules })
-				if (!result.tweaks.length && !result.imports.specifier && !styles.sites.some((x) => x.entry.kind === 'inline' && x.componentBody)) return null
+				if (
+					!result.tweaks.length &&
+					!result.imports.specifier &&
+					!styles.sites.some(
+						(x) =>
+							(x.entry.kind === 'inline' && x.componentBody) ||
+							(x.entry.kind === 'bamboo' && x.call),
+					)
+				)
+					return null
 				const s = new MagicString(code)
 				for (const tweak of result.tweaks) {
 					s.appendLeft(tweak.call.end - 1, `, ${JSON.stringify(tweak.id)}`)
 				}
+				const bambooWrap = styles.sites.filter((x) => x.entry.kind === 'bamboo' && x.call)
+				for (const site of bambooWrap) {
+					s.appendLeft(site.call!.start, `__twCss(${JSON.stringify(site.entry.id)}, `)
+					s.prependRight(site.call!.end, `)`)
+				}
+				if (bambooWrap.length) s.prepend(`import { __twCss } from '@octane-xplat/tweaks/dev'\n`)
 				const inline = styles.sites.filter((x) => x.entry.kind === 'inline' && x.componentBody)
 				if (inline.length) {
 					const bodies = new Set<number>()
@@ -260,7 +286,7 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 					}
 					s.prepend(`import { useTweakStyles } from '@octane-xplat/tweaks/dev'\n`)
 				}
-				return result.tweaks.length || inline.length
+				return result.tweaks.length || inline.length || bambooWrap.length
 					? { code: s.toString(), map: s.generateMap({ hires: true }) }
 					: null
 			}

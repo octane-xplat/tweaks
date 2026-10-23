@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
 		xplatDevBridge(),
 	],
 	define: xplatNodeEnvDefine(mode),
-	server: { port: 5200, host: '127.0.0.1' },
+	server: { port: 5200 },
 	resolve: {
 		conditions: ['web'],
 		extensions: [
