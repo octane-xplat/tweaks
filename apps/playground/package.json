@@ -1,0 +1,46 @@
+{
+	"name": "playground",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"xplat": "xplat",
+		"dev": "vite",
+		"build": "vite build",
+		"test": "vitest run --config vitest.web.config.mts",
+		"test:web": "vitest run --config vitest.web.config.mts",
+		"lint": "xplat lint",
+		"lint:fix": "xplat lint --fix",
+		"typecheck": "xplat typecheck",
+		"format": "xplat fmt",
+		"postinstall": "bamboo codegen",
+		"styles:generate": "bamboo codegen",
+		"test:e2e": "node test/e2e.mjs"
+	},
+	"dependencies": {
+		"@octane-xplat/jsx": "catalog:xplat",
+		"@octane-xplat/platform": "catalog:xplat",
+		"@octane-xplat/ui": "catalog:xplat",
+		"@octane-xplat/nativescript-masonkit": "catalog:xplat",
+		"octane": "catalog:xplat",
+		"@octane-xplat/bamboo": "catalog:xplat",
+		"@octane-xplat/tweaks": "workspace:*"
+	},
+	"devDependencies": {
+		"@octane-xplat/cli": "catalog:xplat",
+		"@octanejs/vite-plugin": "catalog:xplat",
+		"@tsrx/oxc": "catalog:xplat",
+		"@tsrx/typescript-plugin": "catalog:xplat",
+		"jsdom": "catalog:xplat",
+		"typescript": "catalog:xplat",
+		"vite": "catalog:xplat",
+		"vitest": "catalog:xplat",
+		"@bamboocss/dev": "1.56.2",
+		"@octane-xplat/tweaks-vite": "workspace:*",
+		"playwright": "1.63.0",
+		"ws": "8.18.3"
+	},
+	"packageManager": "pnpm@11.24.0",
+	"engines": {
+		"node": ">=22.18.0"
+	}
+}

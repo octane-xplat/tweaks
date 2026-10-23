@@ -1,0 +1,52 @@
+{
+	"name": "@octane-xplat/tweaks",
+	"version": "0.1.0",
+	"description": "Live-tweakable values for Octane Xplat apps \u2014 edited from a dev panel, written back to source on Save",
+	"keywords": [
+		"devtools",
+		"octane",
+		"tweaks",
+		"xplat"
+	],
+	"homepage": "https://github.com/octane-xplat/tweaks",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/octane-xplat/tweaks",
+		"directory": "packages/tweaks"
+	},
+	"files": [
+		"types",
+		"src",
+		"!src/**/*.test.*",
+		"!src/**/*.spec.*"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./types/index.d.ts",
+			"web": "./src/index.ts",
+			"native": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./protocol": {
+			"types": "./types/protocol.d.ts",
+			"default": "./src/protocol.ts"
+		}
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"typegen": "tsc -p tsconfig.types.json",
+		"prepack": "pnpm typegen",
+		"typecheck": "tsc --noEmit -p tsconfig.json"
+	},
+	"devDependencies": {
+		"octane": "0.14.0",
+		"typescript": "5.9.3"
+	},
+	"peerDependencies": {
+		"octane": ">=0.14.0 <1"
+	}
+}

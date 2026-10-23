@@ -1,0 +1,253 @@
+import assert from 'node:assert/strict'
+import http from 'node:http'
+import { test } from 'node:test'
+import WebSocket from 'ws'
+import type { TweakEntry, TweakValue } from '@octane-xplat/tweaks/protocol'
+import { TweaksServer } from '../src/server.ts'
+import { extract, type ExtractedTweak } from '../src/extract.ts'
+
+const TOKEN = 'test-token'
+
+interface Harness {
+	url: string
+	manifest: Map<string, { entry: TweakEntry; tweak: ExtractedTweak }>
+	hub: TweaksServer
+	close(): Promise<void>
+}
+
+async function start(
+	t: { after(fn: () => void): void },
+	files: Record<string, string> = {},
+	saveDelay = 0,
+): Promise<Harness> {
+	const manifest = new Map<string, { entry: TweakEntry; tweak: ExtractedTweak }>()
+	for (const [file, code] of Object.entries(files)) {
+		for (const tweak of extract(code, file).tweaks) {
+			manifest.set(tweak.id, {
+				entry: {
+					id: tweak.id,
+					file,
+					name: tweak.name,
+					group: tweak.group,
+					input: tweak.input,
+					value: tweak.value,
+					writable: tweak.writable,
+					reason: tweak.reason,
+				},
+				tweak,
+			})
+		}
+	}
+	const saves: { ok: boolean; saved: string[]; errors: never[] }[] = []
+	const hub = new TweaksServer({
+		token: TOKEN,
+		root: '/proj',
+		name: 'test-app',
+		getEntry: (id) => manifest.get(id)?.entry,
+		save: async () => {
+			await new Promise((r) => setTimeout(r, saveDelay))
+			const report = { ok: true, saved: ['src/a.tsx'], errors: [] }
+			saves.push(report as never)
+			return report
+		},
+		log: () => {},
+	})
+	const httpServer = http.createServer()
+	httpServer.on('upgrade', hub.handleUpgrade)
+	await new Promise<void>((r) => httpServer.listen(0, '127.0.0.1', r))
+	const port = (httpServer.address() as { port: number }).port
+	t.after(async () => {
+		hub.close()
+		await new Promise((r) => httpServer.close(r))
+	})
+	return {
+		url: `ws://127.0.0.1:${port}/__octane_tweaks`,
+		manifest,
+		hub,
+		close: async () => {
+			hub.close()
+			await new Promise((r) => httpServer.close(r))
+		},
+	}
+}
+
+function connect(h: Harness, role: 'app' | 'panel', clientId: string, token = TOKEN) {
+	const ws = new WebSocket(`${h.url}?token=${token}&role=${role}&clientId=${clientId}&label=web`)
+	ws.on('error', () => {})
+	const queue: Record<string, unknown>[] = []
+	const waiters: { type: string; resolve: (m: Record<string, unknown>) => void }[] = []
+	ws.on('message', (data) => {
+		const msg = JSON.parse(String(data)) as Record<string, unknown>
+		const i = waiters.findIndex((w) => w.type === msg.type)
+		if (i >= 0) waiters.splice(i, 1)[0].resolve(msg)
+		else queue.push(msg)
+	})
+	const next = (type: string, timeoutMs = 3000) =>
+		new Promise<Record<string, unknown>>((resolve, reject) => {
+			const queued = queue.findIndex((m) => m.type === type)
+			if (queued >= 0) return resolve(queue.splice(queued, 1)[0])
+			const timer = setTimeout(() => reject(new Error(`timeout waiting for ${type}`)), timeoutMs)
+			waiters.push({
+				type,
+				resolve: (m) => {
+					clearTimeout(timer)
+					resolve(m)
+				},
+			})
+		})
+	return { ws, next }
+}
+
+function open(ws: WebSocket) {
+	return new Promise<void>((resolve, reject) => {
+		ws.once('open', resolve)
+		ws.once('error', reject)
+	})
+}
+
+
+
+const FILE = `import { useTweak } from '@octane-xplat/tweaks'
+const a = useTweak(8, { input: { type: 'number' } })
+const pick = useTweak('x', { input: { type: 'select', options: ['x', 'y'] } })
+`
+const FILES = { 'src/a.tsx': FILE }
+
+test('rejects missing and wrong tokens with 401', async (t) => {
+	const h = await start(t)
+	const port = Number(new URL(h.url).port)
+	for (const query of ['', '?token=wrong&role=app']) {
+		const statusCode = await new Promise((resolve, reject) => {
+			const req = http.request({
+				port,
+				host: '127.0.0.1',
+				path: `/__octane_tweaks${query}`,
+				headers: {
+					Connection: 'Upgrade',
+					Upgrade: 'websocket',
+					'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==',
+					'Sec-WebSocket-Version': '13',
+				},
+			})
+			req.on('response', (res) => resolve(res.statusCode ?? 0))
+			req.on('upgrade', () => resolve(101))
+			req.on('error', reject)
+			req.end()
+		})
+		assert.equal(statusCode, 401)
+	}
+})
+
+test('mount registers entries; state lists only mounted; disconnect removes', async (t) => {
+	const h = await start(t, FILES)
+	const app = connect(h, 'app', 'c1')
+	await open(app.ws)
+	const values = await app.next( 'values')
+	assert.deepEqual(values.values, {})
+	app.ws.send(JSON.stringify({ type: 'mount', mounts: [{ id: 'src/a.tsx#a', value: 8 }] }))
+	const panel = connect(h, 'panel', 'p1')
+	await open(panel.ws)
+	const state = (await panel.next( 'state')) as {
+		entries: { id: string; mountedBy: string[]; runtimeValue: TweakValue }[]
+		clients: { clientId: string }[]
+	}
+	assert.deepEqual(state.entries.map((e) => e.id), ['src/a.tsx#a'])
+	assert.deepEqual(state.entries[0].mountedBy, ['c1'])
+	assert.equal(state.entries[0].runtimeValue, 8)
+	assert.deepEqual(state.clients.map((c) => c.clientId), ['c1'])
+	// Unmount removes the entry from state.
+	const gone = panel.next( 'state')
+	app.ws.send(JSON.stringify({ type: 'unmount', ids: ['src/a.tsx#a'] }))
+	assert.deepEqual(((await gone).entries as unknown[]).length, 0)
+	assert.deepEqual((await gone).unmountedDirty, [])
+	// Disconnect removes mounts too.
+	app.ws.send(JSON.stringify({ type: 'mount', mounts: [{ id: 'src/a.tsx#a', value: 8 }] }))
+	await panel.next( 'state')
+	const empty = panel.next( 'state')
+	app.ws.close()
+	assert.deepEqual(((await empty).entries as unknown[]).length, 0)
+})
+
+test('set validates type and broadcasts values + state', async (t) => {
+	const h = await start(t, FILES)
+	const app = connect(h, 'app', 'c1')
+	await open(app.ws)
+	await app.next( 'values')
+	app.ws.send(JSON.stringify({ type: 'mount', mounts: [{ id: 'src/a.tsx#pick', value: 'x' }] }))
+	const panel = connect(h, 'panel', 'p1')
+	await open(panel.ws)
+	await panel.next( 'state')
+	// Invalid: not in options → ignored, no broadcast.
+	panel.ws.send(JSON.stringify({ type: 'set', id: 'src/a.tsx#pick', value: 'zzz' }))
+	await new Promise((r) => setTimeout(r, 150))
+	// Valid: broadcast values to the app.
+	const msg = app.next( 'values')
+	panel.ws.send(JSON.stringify({ type: 'set', id: 'src/a.tsx#pick', value: 'y' }))
+	assert.deepEqual((await msg).values, { 'src/a.tsx#pick': 'y' })
+	const state = (await panel.next( 'state')) as { entries: { override: TweakValue | null; dirty: boolean }[] }
+	assert.equal(state.entries[0].override, 'y')
+	assert.equal(state.entries[0].dirty, true)
+	// Revert sets the override to the source value (deliberately not deleted).
+	const reverted = app.next( 'values')
+	panel.ws.send(JSON.stringify({ type: 'revert', ids: ['src/a.tsx#pick'] }))
+	assert.deepEqual((await reverted).values, { 'src/a.tsx#pick': 'x' })
+	const clean = (await panel.next( 'state')) as { entries: { dirty: boolean }[] }
+	assert.equal(clean.entries[0].dirty, false)
+})
+
+test('concurrent save reports busy; save resolves with result', async (t) => {
+	const h = await start(t, FILES, 200)
+	const panel1 = connect(h, 'panel', 'p1')
+	const panel2 = connect(h, 'panel', 'p2')
+	await open(panel1.ws)
+	await open(panel2.ws)
+	await panel1.next( 'state')
+	await panel2.next( 'state')
+	const r1 = panel1.next( 'saveResult')
+	const r2 = panel2.next( 'saveResult')
+	panel1.ws.send(JSON.stringify({ type: 'save' }))
+	panel2.ws.send(JSON.stringify({ type: 'save' }))
+	const [first, second] = await Promise.all([r1, r2]) as { ok: boolean; saved: string[]; errors: { message: string }[] }[]
+	assert.equal(first.ok, true)
+	assert.deepEqual(first.saved, ['src/a.tsx'])
+	assert.equal(second.ok, false)
+	assert.match(second.errors[0].message, /busy/)
+})
+
+test('unmountedDirty lists dirty overrides with no mounting client; bare revert covers them', async (t) => {
+	const h = await start(t, FILES)
+	const app = connect(h, 'app', 'c1')
+	const panel = connect(h, 'panel', 'p1')
+	await open(app.ws)
+	await open(panel.ws)
+	await app.next('values')
+	await panel.next('state')
+	app.ws.send(JSON.stringify({ type: 'mount', mounts: [{ id: 'src/a.tsx#a', value: 8 }] }))
+	await panel.next('state')
+	// Override while mounted, then unmount → dirty with no client.
+	const v = app.next('values')
+	panel.ws.send(JSON.stringify({ type: 'set', id: 'src/a.tsx#a', value: 42 }))
+	await v
+	app.ws.send(JSON.stringify({ type: 'unmount', ids: ['src/a.tsx#a'] }))
+	// Wait for the post-unmount state (earlier broadcasts may still be queued).
+	let s: {
+		entries: unknown[]
+		unmountedDirty: { id: string; override: TweakValue; value: TweakValue | null }[]
+	}
+	for (;;) {
+		s = (await panel.next('state')) as typeof s
+		if (s.entries.length === 0) break
+	}
+	assert.deepEqual(s.unmountedDirty, [
+		{ id: 'src/a.tsx#a', file: 'src/a.tsx', name: 'a', group: null, override: 42, value: 8 },
+	])
+	// Bare revert reverts unmounted dirty overrides too.
+	const reverted = app.next('values')
+	panel.ws.send(JSON.stringify({ type: 'revert' }))
+	assert.deepEqual((await reverted).values, { 'src/a.tsx#a': 8 })
+	let clean: { unmountedDirty: unknown[]; entries: { id: string; dirty: boolean }[] }
+	for (;;) {
+		clean = (await panel.next('state')) as typeof clean
+		if (clean.unmountedDirty.length === 0 && clean.entries.every((e) => !e.dirty)) break
+	}
+})
