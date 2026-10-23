@@ -1,0 +1,57 @@
+{
+	"name": "@octane-xplat/tweaks-desktop",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"xplat": "xplat",
+		"dev": "node dev-macos.mjs",
+		"dev:web": "vite",
+		"build": "xplat build --targets macos",
+		"build:web": "vite build",
+		"typecheck": "xplat typecheck",
+		"lint": "xplat lint",
+		"test:e2e": "node test/e2e.mjs",
+		"postinstall": "node link-host-deps.mjs"
+	},
+	"dependencies": {
+		"@nativescript/macos-node-api": "0.4.4-next.2026-08-09-31292056208",
+		"@octane-xplat/macos-renderer": "0.17.1",
+		"@octane-xplat/platform": "catalog:xplat",
+		"@octane-xplat/tweaks": "workspace:*",
+		"@octane-xplat/ui": "catalog:xplat",
+		"octane": "catalog:xplat"
+	},
+	"devDependencies": {
+		"@octane-xplat/cli": "catalog:xplat",
+		"@octane-xplat/jsx": "catalog:xplat",
+		"@octanejs/vite-plugin": "catalog:xplat",
+		"@tsrx/oxc": "catalog:xplat",
+		"@tsrx/typescript-plugin": "catalog:xplat",
+		"playwright": "1.63.0",
+		"typescript": "catalog:xplat",
+		"vite": "catalog:xplat",
+		"ws": "8.18.3"
+	},
+	"xplat": {
+		"targets": {
+			"macos": {
+				"runtime": "appkit-node-api",
+				"dev": {
+					"viteConfig": "vite.macos.config.mjs",
+					"bundleFile": "dist/main.cjs",
+					"productName": "Octane Tweaks"
+				},
+				"package": {
+					"productName": "Octane Tweaks",
+					"bundleIdentifier": "org.octane-xplat.tweaks",
+					"executableName": "OctaneTweaks",
+					"version": "0.1.0",
+					"minimumSystemVersion": "13.5",
+					"viteConfig": "vite.macos.config.mjs",
+					"bundleFile": "dist/package-build/main.cjs"
+				}
+			}
+		}
+	}
+}

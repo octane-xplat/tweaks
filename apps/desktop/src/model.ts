@@ -1,0 +1,277 @@
+import type {
+	PanelEntry,
+	PanelToServer,
+	ServerToPanel,
+	TweakInput,
+	TweakValue,
+	UnmountedDirtyEntry,
+} from '@octane-xplat/tweaks/protocol'
+
+// Mirrors TWEAKS_PATH — see packages/vite/src/server.ts for why it is not
+// imported at runtime across host boundaries.
+export const TWEAKS_PATH = '/__octane_tweaks'
+export const CLIENT_LABEL = 'desktop'
+export const HEX_COLOR_RE = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
+
+export interface PanelServerInfo {
+	url: string // ws://host:port/__octane_tweaks
+	token: string
+	name: string
+	root: string
+	pid?: number
+	reachable?: boolean
+}
+
+// Servers are identified by their connection identity — a restart of the same
+// app produces a new port+token (a different server for our purposes), while
+// two dev servers for one app share a name.
+export function serverKey(s: PanelServerInfo): string {
+	return `${s.url} ${s.token}`
+}
+// Display label: app name plus its port so same-name servers are distinct.
+export function serverLabel(s: PanelServerInfo): string {
+	return `${s.name} — :${s.url.split(':').pop()?.split('/')[0] ?? '?'}`
+}
+
+export interface Transport {
+	send(data: string): void
+	close(): void
+	onopen: (() => void) | null
+	onmessage: ((data: string) => void) | null
+	onclose: (() => void) | null
+}
+
+export type TransportFactory = (url: string) => Transport | null
+
+export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected'
+
+export interface PanelSnapshot {
+	status: ConnectionStatus
+	clients: { clientId: string; label: string }[]
+	entries: PanelEntry[]
+	unmountedDirty: UnmountedDirtyEntry[]
+	saving: boolean
+	saveResult: { ok: boolean; saved: string[]; errors: { id?: string; file: string; message: string }[] } | null
+	serverName: string | null
+	serverRoot: string | null
+}
+
+// Pure panel model: connection state, the latest server `state` message,
+// input→send validation, reconnect bookkeeping, save-result tracking. No UI,
+// no host APIs — unit-testable under plain node.
+export class PanelModel {
+	private listeners = new Set<() => void>()
+	private transport: Transport | null = null
+	private retryTimer: ReturnType<typeof setTimeout> | null = null
+	private retries = 0
+	private server: PanelServerInfo | null = null
+	private clientId: string
+	private label: string
+
+	status: ConnectionStatus = 'idle'
+	clients: PanelSnapshot['clients'] = []
+	entries: PanelEntry[] = []
+	unmountedDirty: UnmountedDirtyEntry[] = []
+	saving = false
+	saveResult: PanelSnapshot['saveResult'] = null
+	serverName: string | null = null
+	serverRoot: string | null = null
+	// The identity we connected to — survives a `server` rename.
+	connectedKey: string | null = null
+
+	private factory: TransportFactory
+
+	constructor(factory: TransportFactory, opts: { clientId?: string; label?: string } = {}) {
+		this.factory = factory
+		this.clientId = opts.clientId ?? `panel-${Math.random().toString(36).slice(2)}`
+		this.label = opts.label ?? CLIENT_LABEL
+	}
+
+	subscribe(listener: () => void): () => void {
+		this.listeners.add(listener)
+		return () => this.listeners.delete(listener)
+	}
+
+	private notify() {
+		for (const l of this.listeners) l()
+	}
+
+	snapshot(): PanelSnapshot {
+		return {
+			status: this.status,
+			clients: this.clients,
+			entries: this.entries,
+			unmountedDirty: this.unmountedDirty,
+			saving: this.saving,
+			saveResult: this.saveResult,
+			serverName: this.serverName,
+			serverRoot: this.serverRoot,
+		}
+	}
+
+	connect(server: PanelServerInfo) {
+		this.server = server
+		this.connectedKey = serverKey(server)
+		this.retryTimer !== null && clearTimeout(this.retryTimer)
+		this.retries = 0
+		this.open()
+	}
+
+	// Poll-driven connection policy: keep the connected entry while its key is
+	// still listed; otherwise prefer the entry sharing the current root (same
+	// app restarted → new port+token), else the first entry. Returns the chosen
+	// server (or null when the list is empty).
+	syncServers(list: PanelServerInfo[]): PanelServerInfo | null {
+		if (!list.length) return null
+		const current = list.find((s) => serverKey(s) === this.connectedKey)
+		if (current) return current
+		const sameRoot = list.find((s) => this.serverRoot && s.root === this.serverRoot)
+		const next = sameRoot ?? list[0]
+		this.connect(next)
+		return next
+	}
+
+	disconnect() {
+		this.server = null
+		this.connectedKey = null
+		this.retryTimer !== null && clearTimeout(this.retryTimer)
+		this.transport?.close()
+		this.transport = null
+		this.status = 'idle'
+		this.notify()
+	}
+
+	private open() {
+		const server = this.server
+		if (!server) return
+		const sep = server.url.includes('?') ? '&' : '?'
+		const url = `${server.url}${sep}token=${encodeURIComponent(server.token)}&role=panel&clientId=${this.clientId}&label=${this.label}`
+		this.status = 'connecting'
+		this.notify()
+		const t = this.factory(url)
+		if (!t) {
+			this.status = 'disconnected'
+			this.scheduleRetry()
+			return
+		}
+		this.transport = t
+		t.onopen = () => {
+			this.status = 'connected'
+			this.retries = 0
+			this.notify()
+		}
+		t.onmessage = (data) => this.onServerMessage(data)
+		t.onclose = () => {
+			this.transport = null
+			if (this.server) {
+				this.status = 'disconnected'
+				this.notify()
+				this.scheduleRetry()
+			}
+		}
+	}
+
+	private scheduleRetry() {
+		if (!this.server) return
+		// Backoff 1s → 5s cap (same contract as the app client).
+		const delay = Math.min(1000 * 2 ** this.retries++, 5000)
+		this.retryTimer = setTimeout(() => this.open(), delay)
+	}
+
+	private onServerMessage(data: string) {
+		let message: ServerToPanel
+		try {
+			message = JSON.parse(data)
+		} catch {
+			return
+		}
+		if (message.type === 'state') {
+			this.serverName = message.server.name
+			this.serverRoot = message.server.root
+			this.clients = message.clients
+			this.entries = message.entries
+			this.unmountedDirty = message.unmountedDirty ?? []
+			this.notify()
+		} else if (message.type === 'saveResult') {
+			this.saving = false
+			this.saveResult = { ok: message.ok, saved: message.saved, errors: message.errors }
+			this.notify()
+		}
+	}
+
+	private send(message: PanelToServer) {
+		this.transport?.send(JSON.stringify(message))
+	}
+
+	// True when `value` is a legal payload for the entry's input type.
+	validValue(entry: PanelEntry, value: TweakValue): boolean {
+		return validateForInput(entry.input, value)
+	}
+
+	set(id: string, value: TweakValue): boolean {
+		const entry = this.entries.find((e) => e.id === id)
+		if (!entry || !this.validValue(entry, value)) return false
+		this.send({ type: 'set', id, value })
+		return true
+	}
+
+	revert(id: string) {
+		this.send({ type: 'revert', ids: [id] })
+	}
+
+	revertAll() {
+		this.send({ type: 'revert' })
+	}
+
+	save() {
+		if (this.saving || this.dirtyCount() === 0) return
+		this.saving = true
+		this.send({ type: 'save' })
+		this.notify()
+	}
+
+	dirtyCount(): number {
+		return this.entries.filter((e) => e.dirty).length + this.unmountedDirty.length
+	}
+
+	// Grouped + ordered for display: group name first, then entry name.
+	groupedEntries(): { group: string; entries: PanelEntry[] }[] {
+		const groups = new Map<string, PanelEntry[]>()
+		const sorted = [...this.entries].sort((a, b) => {
+			const ga = a.group ?? ''
+			const gb = b.group ?? ''
+			return ga === gb ? a.name.localeCompare(b.name) : ga.localeCompare(gb)
+		})
+		for (const entry of sorted) {
+			const key = entry.group ?? 'General'
+			let list = groups.get(key)
+			if (!list) groups.set(key, (list = []))
+			list.push(entry)
+		}
+		return [...groups].map(([group, entries]) => ({ group, entries }))
+	}
+}
+
+export function validateForInput(input: TweakInput, value: TweakValue): boolean {
+	switch (input.type) {
+		case 'number':
+			return typeof value === 'number' && Number.isFinite(value)
+		case 'boolean':
+			return typeof value === 'boolean'
+		case 'string':
+			return typeof value === 'string'
+		case 'color':
+			return typeof value === 'string' && HEX_COLOR_RE.test(value)
+		case 'select':
+			return (
+				(typeof value === 'string' || typeof value === 'number') &&
+				input.options.includes(value)
+			)
+	}
+}
+
+// The value a control displays: live override, then the source literal, then
+// the last runtime value.
+export function displayValue(entry: PanelEntry): TweakValue {
+	return entry.override ?? entry.value ?? entry.runtimeValue
+}

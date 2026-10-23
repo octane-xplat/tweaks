@@ -8,7 +8,7 @@
 	},
 	"scripts": {
 		"build": "pnpm --filter @octane-xplat/tweaks-vite build && pnpm --filter @octane-xplat/tweaks typegen",
-		"test": "node --test links/octane-config.test.cjs packages/tweaks/test/*.test.mts packages/vite/test/*.test.mts",
+		"test": "node --test links/octane-config.test.cjs packages/tweaks/test/*.test.mts packages/vite/test/*.test.mts apps/desktop/test/*.mts",
 		"typecheck": "pnpm -r typecheck",
 		"lint": "pnpm --filter playground lint",
 		"dev:octane": "pnpm install --ignore-scripts --lockfile=false --config.pnpmfile=./links/octane.cjs",

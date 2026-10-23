@@ -11,6 +11,8 @@ panel, written back to source only on Save.
 - `packages/vite` — `@octane-xplat/tweaks-vite`: Vite plugin (Node only). Emits
   JS to `dist/` with tsc. Plugin goes **before** the Octane plugins.
 - `apps/playground` — private web app used for e2e verification.
+- `apps/desktop` — private panel app (`@octane-xplat/tweaks-desktop`): shared
+  UI for the macOS AppKit renderer (JSC host) and a web build used for e2e.
 - `links` — `dev:octane` pnpmfile hook + tests.
 
 ## Commands
@@ -24,6 +26,10 @@ pnpm typecheck         # all packages
 pnpm build             # emit packages/vite dist + tweaks types
 pnpm --filter playground dev    # playground dev server
 pnpm --filter playground test:e2e  # Playwright e2e (needs playwright chromium)
+pnpm --filter @octane-xplat/tweaks-desktop dev:web   # panel web build :5211
+pnpm --filter @octane-xplat/tweaks-desktop dev       # macOS app via xplat dev
+pnpm --filter @octane-xplat/tweaks-desktop build     # packaged .app → artifacts/
+pnpm --filter @octane-xplat/tweaks-desktop test:e2e  # panel web e2e
 ```
 
 ## Conventions

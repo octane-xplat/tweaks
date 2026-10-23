@@ -29,3 +29,5 @@ The dev server writes a discovery file to
 `~/.octane-xplat/tweaks/servers/<pid>.json` so a panel can find the websocket
 URL and token. To point the framework packages at a local octane-xplat
 checkout instead of the published release, see [links/README.md](links/README.md).
+
+The desktop panel app lives in `apps/desktop` (see its README). It discovers running dev servers from `~/.octane-xplat/tweaks/servers/`, edits entries live, and writes source back only on Save.

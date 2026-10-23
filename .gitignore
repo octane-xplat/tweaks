@@ -5,3 +5,5 @@ types/
 apps/playground/src/styled-system/
 *.tsbuildinfo
 .DS_Store
+apps/desktop/artifacts/
+*.dmg

@@ -1,0 +1,28 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"jsx": "react-jsx",
+		"jsxImportSource": "@octane-xplat/macos-renderer",
+		"customConditions": [
+			"macos"
+		],
+		"moduleSuffixes": [
+			".macos",
+			".web",
+			""
+		],
+		"lib": [
+			"ESNext",
+			"DOM"
+		],
+		"strict": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"allowImportingTsExtensions": true
+	},
+	"include": [
+		"src/**/*"
+	]
+}

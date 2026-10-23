@@ -195,3 +195,4 @@ minimumReleaseAgeExclude:
   - '@tsrx/core@0.5.5'
   - '@tsrx/typescript-plugin@0.4.11'
   - create-octane-xplat@0.17.1
+  - '@octane-xplat/macos-renderer@0.17.1'

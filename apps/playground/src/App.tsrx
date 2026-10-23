@@ -31,7 +31,7 @@ export function App() @{
 
 	return (
 		<View className={styles.screen}>
-			<View className={styles.card} style={{
+			<View testID="card.box" className={styles.card} style={{
 				borderRadius: radius,
 				padding,
 				borderColor: accent,

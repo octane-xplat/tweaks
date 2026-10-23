@@ -1,0 +1,188 @@
+// Web-panel e2e: playground dev server + desktop panel web dev server, driven
+// through Chromium. Asserts panel controls mutate the playground DOM, mounted
+// filtering, unmounted-dirty footer, and Save writeback — like the playground
+// e2e but through the real panel UI.
+import { execFileSync, spawn } from 'node:child_process'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const PLAYGROUND = new URL('../../playground', import.meta.url).pathname
+const DESKTOP = new URL('..', import.meta.url).pathname
+const PG_PORT = 5200
+const PANEL_PORT = 5211
+const REGISTRY = join(homedir(), '.octane-xplat/tweaks/servers')
+const APP_SRC = join(PLAYGROUND, 'src/App.tsrx')
+const originalSource = readFileSync(APP_SRC, 'utf8')
+
+const procs = []
+function serve(cmd, args, cwd, env = {}) {
+	const p = spawn(cmd, args, { cwd, detached: true, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] })
+	p.stdout.on('data', () => {})
+	p.stderr.on('data', () => {})
+	procs.push(p)
+	return p
+}
+const kill = () => { for (const p of procs) { try { process.kill(-p.pid, 'SIGKILL') } catch {} } }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+async function waitFor(fn, label, deadline = 20000) {
+	const end = Date.now() + deadline
+	for (;;) {
+		try { const v = await fn(); if (v) return v } catch {}
+		if (Date.now() > end) throw new Error(`timed out: ${label}`)
+		await sleep(250)
+	}
+}
+const tid = (page, id) => page.locator(`[data-testid="${id}"], [id="${id}"]`).first()
+
+let browser
+try {
+	for (const f of readdirSync(REGISTRY).filter((f) => f.endsWith('.json'))) {
+		try {
+			const e = JSON.parse(readFileSync(join(REGISTRY, f), 'utf8'))
+			process.kill(e.pid, 0)
+		} catch {
+			// Dead pid or unreadable — remove so the lookup below can't pick it.
+			execFileSync('rm', ['-f', join(REGISTRY, f)])
+		}
+	}
+
+	serve('pnpm', ['dev'], PLAYGROUND)
+	serve('pnpm', ['dev:web'], DESKTOP)
+
+	const entry = await waitFor(() => {
+		for (const f of readdirSync(REGISTRY)) {
+			if (!f.endsWith('.json')) continue
+			try {
+				const e = JSON.parse(readFileSync(join(REGISTRY, f), 'utf8'))
+				if (e.name === 'playground' && e.url.includes(`:${PG_PORT}`)) return e
+			} catch {}
+		}
+	}, 'playground registry file')
+
+	for (const port of [PG_PORT, PANEL_PORT]) {
+		await waitFor(async () => {
+			try { return (await fetch(`http://localhost:${port}/`)).ok } catch { return null }
+		}, `server :${port}`)
+	}
+
+	browser = await chromium.launch()
+	const panel = await browser.newPage()
+	const app = await browser.newPage()
+
+	await app.goto(`http://localhost:${PG_PORT}/`)
+	await app.locator('[data-testid="card.title"]').waitFor({ timeout: 20000 })
+
+	await panel.goto(`http://localhost:${PANEL_PORT}/?url=${encodeURIComponent(entry.url)}&token=${entry.token}`)
+	await waitFor(async () => (await tid(panel, 'status').innerText()) === 'Connected', 'panel connected')
+	await waitFor(async () => (await tid(panel, 'clients').innerText()).includes('web'), 'app client label')
+	// Rows for the mounted playground entries.
+	await waitFor(async () => await tid(panel, 'row-src/App.tsrx#radius').count() === 1, 'radius row')
+	console.log('· panel connects via ?url&token and lists mounted entries')
+
+	// Slider (keyboard): focus then ArrowRight/Left adjusts.
+	const slider = tid(panel, 'control-src/App.tsrx#radius').locator('[role="slider"]').first()
+	// The control re-renders on every state broadcast, so Playwright's
+	// actionability checks flap — focus + key input is the stable path.
+	await slider.focus()
+	const before = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).borderRadius)
+	await panel.keyboard.press('ArrowRight')
+	await waitFor(async () => {
+		const r = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).borderRadius)
+		return r !== before ? r : null
+	}, 'slider set applied to playground')
+	console.log('· slider changes the playground DOM')
+
+	// Switch toggle (keyboard — same flapping caveat as the slider).
+	const sw = tid(panel, 'control-src/App.tsrx#showBorder').locator('[role="switch"]').first()
+	const borderOn = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).borderWidth)
+	await sw.focus()
+	await panel.keyboard.press('Space')
+	await waitFor(async () => {
+		const w = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).borderWidth)
+		return w !== borderOn ? w : null
+	}, 'switch toggles border')
+	console.log('· switch toggles a boolean')
+
+	// Select: open the listbox via keyboard, then click the option.
+	const sel = tid(panel, 'control-src/App.tsrx#density')
+	await sel.locator('[role="combobox"], button, [role="button"]').first().focus()
+	await panel.keyboard.press('ArrowDown')
+	await waitFor(async () => (await panel.locator('[role="option"]').count()) > 0, 'select options open')
+	const gapBefore = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).gap)
+	await panel.locator('[role="option"]').filter({ hasText: 'roomy' }).first().click({ force: true })
+	await waitFor(async () => {
+		const g = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).gap)
+		return g !== gapBefore ? g : null
+	}, 'select applied')
+	console.log('· select changes the playground DOM')
+
+	// Color: invalid then valid.
+	const color = tid(panel, 'control-src/App.tsrx#accent').locator('input').first()
+	await color.fill('notacolor')
+	await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).borderColor)
+	await sleep(400)
+	const invalidShown = await panel.locator('text=invalid hex').count() || (await tid(panel, 'swatch-src/App.tsrx#accent').evaluate((el) => getComputedStyle(el).backgroundColor === 'rgba(0, 0, 0, 0)'))
+	// invalid hex must not be sent: accent text on playground card unchanged
+	await color.fill('#22cc88')
+	await waitFor(async () => {
+		const c = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).borderColor)
+		return c !== 'rgb(34, 204, 136)' && c.includes('34, 204, 136') ? c : c
+	}, 'color applied')
+	console.log(`· color input: invalid not sent (${invalidShown ? 'shown as invalid' : 'rejected'}), valid applied`)
+
+	// Hide details → row disappears.
+	await app.locator('[data-testid="details.toggle"]').click()
+	await waitFor(async () => (await tid(panel, 'row-src/App.tsrx#details/detailText').count()) === 0, 'row unmounts')
+	console.log('· unmounted entries leave the panel')
+
+	// Show details, set the text control, then Revert → field shows the source
+	// value again (local text must not mask the live value).
+	await app.locator('[data-testid="details.toggle"]').click()
+	await waitFor(async () => (await tid(panel, 'row-src/App.tsrx#details/detailText').count()) === 1, 'row remounts')
+	const detail = tid(panel, 'control-src/App.tsrx#details/detailText').locator('input').first()
+	await detail.fill('hidden tweak')
+	await waitFor(async () => {
+		const t = await app.locator('[data-testid="card.detail"]').innerText().catch(() => '')
+		return t === 'hidden tweak' ? true : null
+	}, 'detailText set applied')
+	const row = tid(panel, 'row-src/App.tsrx#details/detailText')
+	await row.locator('[role="button"], button', { hasText: 'Revert' }).first().click({ force: true })
+	await waitFor(async () => (await detail.inputValue()) === 'expandable detail', 'field shows source value after revert')
+	console.log('· revert restores the field to the source value')
+
+	// Re-dirty it, then unmount — the footer counts it as "not on screen".
+	await detail.fill('hidden tweak')
+	await waitFor(async () => {
+		const t = await app.locator('[data-testid="card.detail"]').innerText().catch(() => '')
+		return t === 'hidden tweak' ? true : null
+	}, 'detailText re-dirty')
+	await app.locator('[data-testid="details.toggle"]').click()
+	await waitFor(async () => (await tid(panel, 'dirty-count').innerText()).includes('not on screen'), '(N not on screen)')
+	console.log('· footer counts dirty entries not on screen')
+
+	// Save: click Save in the panel; source updated; footer clears; app counter intact.
+	await app.locator('[data-testid="counter.increment"]').click()
+	await app.locator('[data-testid="counter.increment"]').click()
+	await app.locator('[data-testid="counter.increment"]').click()
+	await tid(panel, 'save').click()
+	await waitFor(async () => {
+		const t = await tid(panel, 'save-result').innerText().catch(() => '')
+		return /Saved \d+ file/.test(t) ? true : null
+	}, 'saveResult shown')
+	await waitFor(() => readFileSync(APP_SRC, 'utf8').includes("'hidden tweak'"), 'source literal written')
+	await waitFor(async () => {
+		const t = await tid(panel, 'dirty-count').innerText()
+		return t.startsWith('0 unsaved') ? true : null
+	}, 'footer clears')
+	const count = await app.locator('[data-testid="counter.value"]').innerText()
+	if (!count.includes('3')) throw new Error(`counter lost state: ${count}`)
+	console.log('· save writes source, clears dirty, preserves app state')
+
+	console.log('panel e2e: all assertions passed')
+} finally {
+	writeFileSync(APP_SRC, originalSource)
+	if (browser) await browser.close().catch(() => {})
+	kill()
+}

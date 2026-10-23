@@ -93,6 +93,55 @@ importers:
 
   .: {}
 
+  apps/desktop:
+    dependencies:
+      '@nativescript/macos-node-api':
+        specifier: 0.4.4-next.2026-08-09-31292056208
+        version: 0.4.4-next.2026-08-09-31292056208
+      '@octane-xplat/macos-renderer':
+        specifier: 0.17.1
+        version: 0.17.1(octane@0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))(vitest@4.1.11(@types/node@26.6.5)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))
+      '@octane-xplat/platform':
+        specifier: catalog:xplat
+        version: 0.17.1(octane@0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))(vitest@4.1.11(@types/node@26.6.5)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))
+      '@octane-xplat/tweaks':
+        specifier: workspace:*
+        version: link:../../packages/tweaks
+      '@octane-xplat/ui':
+        specifier: catalog:xplat
+        version: 0.17.1(octane@0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))(vitest@4.1.11(@types/node@26.6.5)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))
+      octane:
+        specifier: catalog:xplat
+        version: 0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1))
+    devDependencies:
+      '@octane-xplat/cli':
+        specifier: catalog:xplat
+        version: 0.17.1(cac@6.7.14)(oxlint-tsgolint@7.0.2002)
+      '@octane-xplat/jsx':
+        specifier: catalog:xplat
+        version: 0.17.1(octane@0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))
+      '@octanejs/vite-plugin':
+        specifier: catalog:xplat
+        version: 0.1.61(octane@0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1))
+      '@tsrx/oxc':
+        specifier: catalog:xplat
+        version: 0.20.0
+      '@tsrx/typescript-plugin':
+        specifier: catalog:xplat
+        version: 0.4.11(patch_hash=d59e06c4ca94d559fee4b759d5aa18a118468586dbac9f1ec2c1d75a20bbd6ee)(octane@0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))(typescript@5.9.3)
+      playwright:
+        specifier: 1.63.0
+        version: 1.63.0
+      typescript:
+        specifier: catalog:xplat
+        version: 5.9.3
+      vite:
+        specifier: catalog:xplat
+        version: 8.3.0(@types/node@26.6.5)(yaml@2.9.1)
+      ws:
+        specifier: 8.18.3
+        version: 8.18.3
+
   apps/playground:
     dependencies:
       '@octane-xplat/bamboo':
@@ -688,6 +737,12 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
+  '@nativescript/macos-node-api@0.4.4-next.2026-08-09-31292056208':
+    resolution: {integrity: sha512-BiZiitKtqijvy9G/QbPMVnv2IrzoSH1CzjIpAxV5RmWDX/2lgoNHKWVg07jHRieFMksRg/R99eM5tF3Hj0qymg==}
+
+  '@nativescript/objc-node-api@1.0.0-alpha.7':
+    resolution: {integrity: sha512-HCkKX46wmc/Oe+Td958HeRmlqKCKmzeeIm0Kofb8aU+6WqjslLK8xGj6HLQT1SyzLWNQdr3dYp7PLFixMjBymw==}
+
   '@noble/hashes@2.4.0':
     resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
     engines: {node: '>= 20.19.0'}
@@ -776,6 +831,11 @@ packages:
   '@octane-xplat/lint@0.17.1':
     resolution: {integrity: sha512-PWdKKcZqyxnm8hCnc0XbVW/53eyCp4rJ9BCGhTSJmG6yZMk5AcXY/FbuLJqDuMCiunaosgFQbPLK3e1MfMeVmg==}
     hasBin: true
+
+  '@octane-xplat/macos-renderer@0.17.1':
+    resolution: {integrity: sha512-3dbnhjyhM6zPSC7Sk9n8DmA0uWJqblApn8i+jcAFC+ItripM97YjFb/bY7wlI2/nqsfLVFe6gQJua0e3QXOOww==}
+    peerDependencies:
+      octane: '>=0.6.3 <1'
 
   '@octane-xplat/nativescript-masonkit@1.0.0-beta.126':
     resolution: {integrity: sha512-Lx2PN1uOfDrLsCfLjJ6EckGiFiP5/9nCSftRXXhmgs/CtfrR4dq60iyUe+Scc3F90zHlRNvjbNkLO1Rtk8Gw6Q==}
@@ -1554,6 +1614,11 @@ packages:
 
   '@vue/shared@3.5.41':
     resolution: {integrity: sha512-IOnwSCma8j+9xJT6b8H0dEYidC80NsYmNMlZxRsukYcSoGaDBohog5hDxzeUXdFeGWFA++vWvxqOmrr96VlqMA==}
+
+  acorn@8.15.0:
+    resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
 
   acorn@8.19.0:
     resolution: {integrity: sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw==}
@@ -2876,6 +2941,12 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
+  '@nativescript/macos-node-api@0.4.4-next.2026-08-09-31292056208':
+    dependencies:
+      '@nativescript/objc-node-api': 1.0.0-alpha.7
+
+  '@nativescript/objc-node-api@1.0.0-alpha.7': {}
+
   '@noble/hashes@2.4.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -2978,6 +3049,22 @@ snapshots:
       - '@typescript-eslint/types'
       - oxlint-tsgolint
       - vite-plus
+
+  '@octane-xplat/macos-renderer@0.17.1(octane@0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))(vitest@4.1.11(@types/node@26.6.5)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))':
+    dependencies:
+      '@nativescript/macos-node-api': 0.4.4-next.2026-08-09-31292056208
+      '@nativescript/objc-node-api': 1.0.0-alpha.7
+      '@octane-xplat/platform': 0.17.1(octane@0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))(vitest@4.1.11(@types/node@26.6.5)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))
+      acorn: 8.15.0
+      octane: 0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1))
+      saxes: 6.0.0
+    transitivePeerDependencies:
+      - '@nativescript-community/octane'
+      - '@nativescript/core'
+      - '@nativescript/types-android'
+      - '@nativescript/types-ios'
+      - '@nativescript/unit-test-runner'
+      - vitest
 
   '@octane-xplat/nativescript-masonkit@1.0.0-beta.126': {}
 
@@ -3488,6 +3575,8 @@ snapshots:
       '@vue/shared': 3.5.41
 
   '@vue/shared@3.5.41': {}
+
+  acorn@8.15.0: {}
 
   acorn@8.19.0: {}
 
