@@ -15,7 +15,7 @@ import {
 	VStack,
 } from '@octane-xplat/ui';
 import { createStore, useStore } from '@octane-xplat/ui/data';
-import type { PanelEntry, TweakValue } from '@octane-xplat/tweaks/protocol';
+import type { PanelEntry, PanelStyleEntry, TweakValue } from '@octane-xplat/tweaks/protocol';
 import { displayValue, HEX_COLOR_RE, PanelModel, serverKey, serverLabel, type PanelServerInfo } from './model';
 import { transportFactory } from './transport';
 import { pollServers } from './servers';
@@ -131,12 +131,109 @@ function Row(props: { entry: PanelEntry }) @{
 	);
 }
 
+function StylePropRow(props: { site: PanelStyleEntry; path: string[] }) @{
+	useStore(modelTick);
+	const site = props.site;
+	const key = props.path.join('.');
+	const prop = site.properties.find((p) => p.path.join('.') === key);
+	const added = !prop; // draft-added path
+	const value = model.stylePropValue(site, props.path);
+	const deleted = model.stylePropDeleted(site, props.path);
+	const editable = (prop?.editable ?? added) && site.writable && !deleted;
+
+	return (
+		<HStack style={{ gap: 8, alignItems: 'center', paddingLeft: 8 }}>
+			<Text testID={`style-path-${site.id}-${key}`}>{deleted ? `~${key}~` : key}</Text>
+			{!prop?.editable && !added ? (
+				<Text>dynamic</Text>
+			) : (
+				<>
+					<TextInput
+						testID={`style-input-${site.id}-${key}`}
+						value={value == null ? '' : String(value)}
+						onChange={(v: string) => model.styleSet(site.id, props.path, v)}
+					/>
+					{deleted ? (
+						<Button
+							testID={`style-undo-${site.id}-${key}`}
+							label="Undo"
+							clickAction={() => model.styleRestore(site.id, props.path)}
+						/>
+					) : editable ? (
+						<Button
+							testID={`style-delete-${site.id}-${key}`}
+							label="Delete"
+							clickAction={() => model.styleDelete(site.id, props.path)}
+						/>
+					) : null}
+				</>
+			)}
+		</HStack>
+	);
+}
+
+function StyleSiteCard(props: { site: PanelStyleEntry }) @{
+	useStore(modelTick);
+	const site = props.site;
+	const [name, setName] = useState('');
+	const [val, setVal] = useState('');
+	const canAdd = model.styleAddNameValid(site, name);
+	const paths = site.properties.map((p) => p.path);
+	for (const k of model.styleAddedPaths(site)) paths.push(k.split('.'));
+
+	return (
+		<VStack testID={`stylesite-${site.id}`} style={{ gap: 4, paddingLeft: 8 }}>
+			<HStack style={{ gap: 8, alignItems: 'center' }}>
+				<Text>{site.label}</Text>
+				<Text>{`${site.file}:${site.line}`}</Text>
+				{site.dirty ? <Badge><Text>modified</Text></Badge> : null}
+				{site.dirty ? (
+					<Button label="Revert" clickAction={() => model.revert(site.id)} />
+				) : null}
+			</HStack>
+			{site.preview === 'unavailable' ? <Text>Preview unavailable</Text> : null}
+			{!site.writable ? <Text>{site.reason ?? 'read-only'}</Text> : null}
+			{paths.map((p) => (
+				<StylePropRow key={p.join('.')} site={site} path={p} />
+			))}
+			{site.writable ? (
+				<HStack style={{ gap: 8, alignItems: 'center', paddingLeft: 8 }}>
+					<TextInput
+						testID={`style-add-name-${site.id}`}
+						value={name}
+						placeholder="property"
+						onChange={(v: string) => setName(v)}
+					/>
+					<TextInput
+						testID={`style-add-value-${site.id}`}
+						value={val}
+						placeholder="value"
+						onChange={(v: string) => setVal(v)}
+					/>
+					<Button
+						testID={`style-add-${site.id}`}
+						label="Add"
+						isDisabled={!canAdd}
+						clickAction={() => {
+							if (model.styleAdd(site, name, val)) {
+								setName('');
+								setVal('');
+							}
+						}}
+					/>
+				</HStack>
+			) : null}
+		</VStack>
+	);
+}
+
 export function App() @{
 	useStore(modelTick);
 	const servers = useStore(servers$);
 	const onTop = useStore(keepOnTop$);
 	const snap = model.snapshot();
 	const groups = model.groupedEntries();
+	const styleGroups = model.groupedStyles();
 	const dirty = model.dirtyCount();
 	const unmounted = snap.unmountedDirty.length;
 
@@ -188,7 +285,7 @@ export function App() @{
 					</HStack>
 				) : null}
 			</HStack>
-			<ScrollableArea style={{ height: 520 }}>
+			<ScrollableArea style={{ height: 460 }}>
 				{snap.status === 'connected' && snap.entries.length === 0 ? (
 					<Text testID="entries.empty">No tweaks on screen. Open a screen that calls useTweak.</Text>
 				) : (
@@ -201,6 +298,19 @@ export function App() @{
 								))}
 							</VStack>
 						))}
+						{styleGroups.length ? (
+							<VStack testID="styles.section" style={{ gap: 4, paddingTop: 8 }}>
+								<Text style={{ fontWeight: 'bold' }}>Styles</Text>
+								{styleGroups.map((g) => (
+									<VStack key={g.file} style={{ gap: 4, paddingLeft: 4 }}>
+										<Text style={{ fontWeight: 'bold' }}>{g.file}</Text>
+										{g.sites.map((site) => (
+											<StyleSiteCard key={site.id} site={site} />
+										))}
+									</VStack>
+								))}
+							</VStack>
+						) : null}
 					</VStack>
 				)}
 			</ScrollableArea>

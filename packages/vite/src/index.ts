@@ -115,7 +115,15 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 			isDirty,
 			isStyleDirty: (id) => {
 				const d = hub?.styleDrafts.get(id)
-				return !!d && (Object.keys(d.set).length > 0 || d.delete.length > 0)
+				if (!d) return false
+				const source = new Map(
+					(styleManifest.get(id)?.entry.properties ?? []).map((p) => [p.path.join('.'), p.value]),
+				)
+				for (const [k, v] of Object.entries(d.set)) {
+					if (!source.has(k) || source.get(k) !== v) return true
+				}
+				for (const k of d.delete) if (source.has(k)) return true
+				return false
 			},
 		})
 		// Record what we wrote so the resulting file-change event does not HMR

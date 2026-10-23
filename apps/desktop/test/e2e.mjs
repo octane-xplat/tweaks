@@ -111,7 +111,7 @@ try {
 	await panel.keyboard.press('ArrowDown')
 	await waitFor(async () => (await panel.locator('[role="option"]').count()) > 0, 'select options open')
 	const gapBefore = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).gap)
-	await panel.locator('[role="option"]').filter({ hasText: 'roomy' }).first().click({ force: true })
+	await panel.locator('[role="option"]').filter({ hasText: 'roomy' }).first().dispatchEvent('click')
 	await waitFor(async () => {
 		const g = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).gap)
 		return g !== gapBefore ? g : null
@@ -161,6 +161,40 @@ try {
 	await app.locator('[data-testid="details.toggle"]').click()
 	await waitFor(async () => (await tid(panel, 'dirty-count').innerText()).includes('not on screen'), '(N not on screen)')
 	console.log('· footer counts dirty entries not on screen')
+
+	// Styles UI: inline edit, bamboo add + delete, site revert, Save.
+	const titleSite = 'src/App.tsrx#style:App/Text:2'
+	const cardSite = 'src/App.style.ts#css:card'
+	await waitFor(async () => (await tid(panel, `stylesite-${cardSite}`).count()) === 1, 'Styles section lists card site')
+	// 1) inline fontSize edit via the Styles UI.
+	await tid(panel, `style-input-${titleSite}-fontSize`).fill('30')
+	await waitFor(async () => {
+		const v = await app.locator('[data-testid="card.title"]').evaluate((el) => getComputedStyle(el).fontSize)
+		return v === '30px' ? true : null
+	}, 'inline fontSize applied live')
+	console.log('· styles UI: inline edit applies')
+	// 2) bamboo add _web.color + delete backgroundColor.
+	await tid(panel, `style-add-name-${cardSite}`).fill('opacity')
+	await tid(panel, `style-add-value-${cardSite}`).fill('0.5')
+	await tid(panel, `style-add-${cardSite}`).click()
+	await waitFor(async () => {
+		const v = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).opacity)
+		return v === '0.5' ? true : null
+	}, 'bamboo added opacity applied live')
+	await tid(panel, `style-delete-${cardSite}-backgroundColor`).click()
+	const baseBg = 'rgb(255, 255, 255)'
+	await waitFor(async () => {
+		const v = await app.locator('[data-testid="card.box"]').evaluate((el) => getComputedStyle(el).backgroundColor)
+		return v !== baseBg || v === 'rgba(0, 0, 0, 0)' ? true : null
+	}, 'bamboo backgroundColor deleted')
+	console.log('· styles UI: bamboo add/delete apply')
+	// 3) Revert the card site — original classes + marker restored.
+	await tid(panel, `stylesite-${cardSite}`).locator('[role="button"], button').filter({ hasText: 'Revert' }).first().click()
+	await waitFor(async () => {
+		const cls = await app.locator('[data-testid="card.box"]').evaluate((el) => el.className)
+		return cls.includes('bg-c_surface') && !cls.includes('opacity_0.5') ? true : null
+	}, 'card site revert restores classes')
+	console.log('· styles UI: site revert restores')
 
 	// Save: click Save in the panel; source updated; footer clears; app counter intact.
 	await app.locator('[data-testid="counter.increment"]').click()

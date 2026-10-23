@@ -128,5 +128,15 @@ if (process.env.TWEAKS_PANEL_SELFTEST === '1') {
 		console.log(`[selftest] set ${entry.id} = ${target}`)
 		const ok = model.set(entry.id, target)
 		console.log(`[selftest] set sent ok=${ok}`)
+		// C3: one styleSet for an inline site through the same transport.
+		const style = model.styles.find((x) => x.kind === 'inline' && x.properties.some((p) => p.editable))
+		if (style) {
+			const prop = style.properties.find((p) => p.editable)!
+			const v = typeof prop.value === 'number' ? prop.value + 4 : String(prop.value) + 'x'
+			console.log(`[selftest] styleSet ${style.id} ${prop.path.join('.')} = ${v}`)
+			console.log(`[selftest] styleSet sent ok=${model.styleSet(style.id, prop.path, String(v))}`)
+		} else {
+			console.log('[selftest] no mounted inline style site to edit')
+		}
 	})
 }

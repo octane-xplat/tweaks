@@ -259,7 +259,21 @@ export class TweaksServer {
 
 	private isStyleDirty(id: string): boolean {
 		const d = this.styleDrafts.get(id)
-		return !!d && (Object.keys(d.set).length > 0 || d.delete.length > 0)
+		if (!d) return false
+		// Dirty = draft differs from the source properties. After save the
+		// refreshed manifest's literals equal the draft, so this goes false
+		// while the draft (and its live preview) is kept.
+		const source = new Map(
+			(this.deps.getStyleEntry(id)?.properties ?? []).map((p) => [
+				p.path.join('.'),
+				p.value,
+			]),
+		)
+		for (const [k, v] of Object.entries(d.set)) {
+			if (!source.has(k) || source.get(k) !== v) return true
+		}
+		for (const k of d.delete) if (source.has(k)) return true
+		return false
 	}
 
 	private validValue(entry: TweakEntry, value: TweakValue): boolean {
@@ -287,6 +301,8 @@ export class TweaksServer {
 		const entries: PanelEntry[] = []
 		for (const [id, clients] of this.mountedBy) {
 			if (!clients.size) continue
+			// Style sites mount through the same table but render under styles.
+			if (this.deps.getStyleEntry?.(id)) continue
 			const entry = this.deps.getEntry(id)
 			const override = this.overrides.get(id) ?? null
 			const base: TweakEntry =

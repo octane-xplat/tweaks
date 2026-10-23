@@ -1,5 +1,7 @@
 import type {
 	PanelEntry,
+	PanelStyleEntry,
+	StyleValue,
 	PanelToServer,
 	ServerToPanel,
 	TweakInput,
@@ -49,6 +51,7 @@ export interface PanelSnapshot {
 	status: ConnectionStatus
 	clients: { clientId: string; label: string }[]
 	entries: PanelEntry[]
+	styles: PanelStyleEntry[]
 	unmountedDirty: UnmountedDirtyEntry[]
 	saving: boolean
 	saveResult: { ok: boolean; saved: string[]; errors: { id?: string; file: string; message: string }[] } | null
@@ -71,6 +74,7 @@ export class PanelModel {
 	status: ConnectionStatus = 'idle'
 	clients: PanelSnapshot['clients'] = []
 	entries: PanelEntry[] = []
+	styles: PanelStyleEntry[] = []
 	unmountedDirty: UnmountedDirtyEntry[] = []
 	saving = false
 	saveResult: PanelSnapshot['saveResult'] = null
@@ -101,6 +105,7 @@ export class PanelModel {
 			status: this.status,
 			clients: this.clients,
 			entries: this.entries,
+			styles: this.styles,
 			unmountedDirty: this.unmountedDirty,
 			saving: this.saving,
 			saveResult: this.saveResult,
@@ -190,6 +195,7 @@ export class PanelModel {
 			this.serverRoot = message.server.root
 			this.clients = message.clients
 			this.entries = message.entries
+			this.styles = message.styles ?? []
 			this.unmountedDirty = message.unmountedDirty ?? []
 			this.notify()
 		} else if (message.type === 'saveResult') {
@@ -231,7 +237,83 @@ export class PanelModel {
 	}
 
 	dirtyCount(): number {
-		return this.entries.filter((e) => e.dirty).length + this.unmountedDirty.length
+		return (
+			this.entries.filter((e) => e.dirty).length +
+			this.styles.filter((e) => e.dirty).length +
+			this.unmountedDirty.length
+		)
+	}
+
+	// ---- Style sites ---------------------------------------------------------
+
+	// The value a property row shows: draft override, else the source literal.
+	stylePropValue(site: PanelStyleEntry, path: string[]): StyleValue | null {
+		const key = path.join('.')
+		if (key in site.draft.set) return site.draft.set[key]
+		return site.properties.find((p) => p.path.join('.') === key)?.value ?? null
+	}
+
+	// Draft-deleted paths (for the struck "deleted" display).
+	stylePropDeleted(site: PanelStyleEntry, path: string[]): boolean {
+		return site.draft.delete.includes(path.join('.'))
+	}
+
+	// Draft-added paths not present in the source properties.
+	styleAddedPaths(site: PanelStyleEntry): string[] {
+		const have = new Set(site.properties.map((p) => p.path.join('.')))
+		return Object.keys(site.draft.set).filter((k) => !have.has(k))
+	}
+
+	styleSet(id: string, path: string[], text: string): boolean {
+		const site = this.styles.find((e) => e.id === id)
+		if (!site || !site.writable || !path.length || path.some((p) => !p)) return false
+		const original = site.properties.find((p) => p.path.join('.') === path.join('.'))
+		// Numbers stay numbers when the source was numeric and the text parses.
+		const parsed = Number(text)
+		const value: StyleValue =
+			typeof original?.value === 'number' && Number.isFinite(parsed)
+				? parsed
+				: text
+		this.send({ type: 'styleSet', id, path, value })
+		return true
+	}
+
+	styleDelete(id: string, path: string[]) {
+		this.send({ type: 'styleDelete', id, path })
+	}
+
+	// Undo a draft-deleted row: re-set the original literal.
+	styleRestore(id: string, path: string[]) {
+		const site = this.styles.find((e) => e.id === id)
+		const original = site?.properties.find((p) => p.path.join('.') === path.join('.'))
+		if (original?.value != null) {
+			this.send({ type: 'styleSet', id, path, value: original.value })
+		}
+	}
+
+	// Add-property name validation: non-empty segments; inline sites are flat.
+	styleAddNameValid(site: PanelStyleEntry, name: string): boolean {
+		if (!name.trim()) return false
+		const segs = name.split('.')
+		if (segs.some((p) => !p.trim())) return false
+		if (site.kind === 'inline' && segs.length !== 1) return false
+		return true
+	}
+
+	styleAdd(site: PanelStyleEntry, name: string, text: string) {
+		if (!this.styleAddNameValid(site, name)) return false
+		return this.styleSet(site.id, name.trim().split('.'), text)
+	}
+
+	// Style sites grouped by file for the Styles section.
+	groupedStyles(): { file: string; sites: PanelStyleEntry[] }[] {
+		const groups = new Map<string, PanelStyleEntry[]>()
+		for (const site of this.styles) {
+			let list = groups.get(site.file)
+			if (!list) groups.set(site.file, (list = []))
+			list.push(site)
+		}
+		return [...groups].map(([file, sites]) => ({ file, sites }))
 	}
 
 	// Grouped + ordered for display: group name first, then entry name.

@@ -40,11 +40,12 @@ function entry(partial: Partial<PanelEntry>): PanelEntry {
 }
 
 const SERVER = { url: 'ws://127.0.0.1:9/__octane_tweaks', token: 't', name: 'app', root: '/r' }
-const stateMsg = (entries: PanelEntry[], unmountedDirty = []) => ({
+const stateMsg = (entries: PanelEntry[], unmountedDirty = [], styles: unknown[] = []) => ({
 	type: 'state',
 	server: { name: 'app', root: '/r' },
 	clients: [{ clientId: 'c', label: 'web' }],
 	entries,
+	styles,
 	unmountedDirty,
 })
 
@@ -178,3 +179,52 @@ test('syncServers keeps current, follows restart by root, falls back to first', 
 	model.connectedKey = null
 	assert.equal(model.syncServers([]), null)
 })
+
+test('style dirty count, draft display, number coercion, add-name validation', () => {
+	const { model, transports } = setup()
+	const transport = () => transports[0]
+	model.onServerMessage(JSON.stringify({ ...stateMsg([]), styles: [STYLE_SITE] }))
+	assert.equal(model.dirtyCount(), 0)
+	model.onServerMessage(JSON.stringify({ ...stateMsg([]), styles: [{ ...STYLE_SITE, dirty: true }] }))
+	assert.equal(model.dirtyCount(), 1)
+
+	// draft display: draft.set wins over the source literal
+	const site = { ...STYLE_SITE, draft: { set: { padding: '10' }, delete: [] as string[] } }
+	assert.equal(model.stylePropValue(site, ['padding']), '10')
+	assert.equal(model.stylePropValue(site, ['backgroundColor']), 'surface')
+	assert.equal(model.stylePropDeleted(site, ['padding']), false)
+	assert.equal(model.stylePropDeleted({ ...site, draft: { set: {}, delete: ['padding'] } }, ['padding']), true)
+	assert.deepEqual(model.styleAddedPaths(site), [])
+	assert.deepEqual(model.styleAddedPaths({ ...site, draft: { set: { marginTop: '8' }, delete: [] } }), ['marginTop'])
+
+	// number coercion: numeric original + parseable text -> number; else string
+	model.styleSet('style-1', ['fontSize'], '30')
+	assert.deepEqual(JSON.parse(transport().sent.at(-1)).value, 30)
+	model.styleSet('style-1', ['padding'], '10')
+	assert.deepEqual(JSON.parse(transport().sent.at(-1)).value, '10')
+	model.styleSet('style-1', ['fontSize'], 'abc')
+	assert.deepEqual(JSON.parse(transport().sent.at(-1)).value, 'abc')
+
+	// add-name validation: flat for inline, dotted ok for bamboo, empties rejected
+	assert.equal(model.styleAddNameValid({ ...STYLE_SITE, kind: 'inline' }, 'marginTop'), true)
+	assert.equal(model.styleAddNameValid({ ...STYLE_SITE, kind: 'inline' }, 'a.b'), false)
+	assert.equal(model.styleAddNameValid(STYLE_SITE, '_web.color'), true)
+	assert.equal(model.styleAddNameValid(STYLE_SITE, ''), false)
+	assert.equal(model.styleAddNameValid(STYLE_SITE, 'a..b'), false)
+
+	// restore sends the original literal
+	model.styleRestore('style-1', ['backgroundColor'])
+	assert.deepEqual(JSON.parse(transport().sent.at(-1)), {
+		type: 'styleSet', id: 'style-1', path: ['backgroundColor'], value: 'surface',
+	})
+})
+
+const STYLE_SITE = {
+	id: 'style-1', kind: 'bamboo', file: 'src/App.style.ts', line: 5, label: 'card',
+	properties: [
+		{ path: ['padding'], value: '6', editable: true },
+		{ path: ['backgroundColor'], value: 'surface', editable: true },
+		{ path: ['fontSize'], value: 24, editable: true },
+	],
+	writable: true, draft: { set: {}, delete: [] }, dirty: false, mountedBy: ['app'], preview: 'live',
+} as never

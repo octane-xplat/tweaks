@@ -34,6 +34,16 @@ process.on('unhandledRejection', (e) => {
 	console.error('UNHANDLED', e)
 })
 async function main() {
+	// Remove stale registry entries for this port/root first — a crashed prior
+	// run can leave one whose token no longer matches the new server.
+	try {
+		for (const f of fs.readdirSync(REGISTRY)) {
+			try {
+				const e = JSON.parse(fs.readFileSync(path.join(REGISTRY, f), 'utf8'))
+				if (e.root === ROOT || e.url?.includes(`:${PORT}/`)) { fs.unlinkSync(path.join(REGISTRY, f)) }
+			} catch {}
+		}
+	} catch {}
 	const originalSource = fs.readFileSync(APP_FILE, 'utf8')
 	const dev = spawn('pnpm', ['exec', 'vite', '--port', String(PORT), '--strictPort'], {
 		cwd: ROOT,
@@ -254,6 +264,15 @@ async function main() {
 		}, 'bamboo backgroundColor removed')
 		console.log('· bamboo set/add/delete preview live')
 
+		// Revert: override tokens stripped, originals + marker restored.
+		panel.send(JSON.stringify({ type: 'revert', ids: [cardSite] }))
+		await waitFor(async () => {
+			const cls = await page.locator('[data-testid="card.box"]').evaluate((el) => el.className)
+			const bg = await page.locator('[data-testid="card.box"]').evaluate((el) => globalThis.getComputedStyle(el).backgroundColor)
+			return bg === baseBg && /tw_[0-9a-f]{8}/.test(cls) && !cls.includes('bg-c_primary') ? true : null
+		}, 'bamboo revert restores original classes + computed style')
+		console.log('· bamboo revert restores original classes')
+
 		// 5. Save: counter to 3, save writes the literal, state survives.
 		await page.locator('[data-testid="counter.increment"]').click()
 		await page.locator('[data-testid="counter.increment"]').click()
@@ -262,7 +281,7 @@ async function main() {
 		panel.send(JSON.stringify({ type: 'save' }))
 		const saveResult = await next('saveResult')
 		assert.equal(saveResult.ok, true, JSON.stringify(saveResult.errors))
-		assert.ok(saveResult.saved.includes('src/App.tsrx'))
+		assert.ok(saveResult.saved.includes('src/App.tsrx'), JSON.stringify(saveResult))
 		const source = fs.readFileSync(APP_FILE, 'utf8')
 		assert.match(source, /useTweak\(30, \{ input: \{ type: 'number', min: 0, max: 40, step: 1 \} \}/)
 		// HMR suppressed → counter state survives and the page did not reload.

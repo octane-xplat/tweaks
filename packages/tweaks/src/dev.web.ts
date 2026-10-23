@@ -7,6 +7,9 @@ import { client } from './client'
 const MARKER_PREFIX = 'tw_'
 const sites = new Map<string, { id: string; classes: string[] }>()
 const seen = new Map<string, number>() // marker -> element count
+// Override tokens each element currently carries, so revert/updates can strip
+// exactly what we added and no more.
+const applied = new WeakMap<Element, Set<string>>()
 let observer: MutationObserver | null = null
 
 function hash(id: string): string {
@@ -25,6 +28,11 @@ function markerFor(id: string): string {
 function siteForMarker(marker: string) {
 	for (const s of sites.values()) if (markerFor(s.id) === marker) return s
 	return null
+}
+
+function sitesOn(el: Element) {
+	const tokens = el.className.split(/\s+/).filter(Boolean)
+	return [...sites.values()].filter((s) => tokens.includes(markerFor(s.id)))
 }
 
 function scan() {
@@ -65,41 +73,46 @@ function applyOverrides() {
 	if (applying) return
 	applying = true
 	try {
-		const css: string[] = []
-		for (const site of sites.values()) {
-			const raw = client.getStyleRaw(site.id)
-			const marker = markerFor(site.id)
-			for (const el of document.querySelectorAll(`.${marker}`)) {
-				const tokens = el.className.split(/\s+/).filter(Boolean)
+		const css = new Map<string, string>()
+		for (const el of document.querySelectorAll(`[class*="${MARKER_PREFIX}"]`)) {
+			const tokens = el.className.split(/\s+/).filter(Boolean)
+			const before = applied.get(el) ?? new Set<string>()
+			// Original classes contributed by ANY tw site on this element are kept
+			// even when another site's original set overlaps them.
+			const originals = new Set<string>()
+			for (const s of sitesOn(el)) for (const c of s.classes) originals.add(c)
+			const strip = new Set([...before].filter((c) => !originals.has(c)))
+			const next = new Set(tokens.filter((c) => !strip.has(c)))
+			for (const s of sitesOn(el)) {
+				const raw = client.getStyleRaw(s.id)
 				if (raw && raw.kind === 'bamboo') {
-					// Out: this site's original classes, except ones another tw site
-					// on the same element contributes. In: override className tokens.
-					const others = [...sites.values()].filter((s) => s.id !== site.id)
-					const remove = new Set(
-						site.classes.filter((c) => !others.some((s) => s.classes.includes(c))),
-					)
-					const next = [
-						...new Set([
-							...tokens.filter((c) => !remove.has(c)),
-							...raw.className.split(/\s+/).filter(Boolean),
-						]),
-					]
-					const text = next.join(' ')
-					if (el.className !== text) el.className = text
-					css.push(raw.css)
-				} else {
-					// Override gone (revert / dropped): restore missing originals.
-					const missing = site.classes.filter((c) => !tokens.includes(c))
-					if (missing.length) el.className = [...tokens, ...missing].join(' ')
+					// Remove this site's originals, except classes another tw site
+					// on the same element contributes.
+					for (const c of s.classes) {
+						if (!othersOn(el, s.id).some((o) => o.classes.includes(c))) next.delete(c)
+					}
+					for (const c of raw.className.split(/\s+/).filter(Boolean)) next.add(c)
+					css.set(s.id, raw.css)
 				}
 			}
+			const text = [...next].join(' ')
+			if (el.className !== text) el.className = text
+			// Record what is now on the element beyond tw-site originals.
+			applied.set(
+				el,
+				new Set([...next].filter((c) => !originals.has(c) && !c.startsWith(MARKER_PREFIX))),
+			)
 		}
 		const tag = previewTag()
-		const text = css.join('\n')
+		const text = [...css.values()].join('\n')
 		if (tag.textContent !== text) tag.textContent = text
 	} finally {
 		applying = false
 	}
+}
+
+function othersOn(el: Element, id: string) {
+	return sitesOn(el).filter((s) => s.id !== id)
 }
 
 function ensureObserver() {

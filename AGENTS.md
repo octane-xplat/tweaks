@@ -39,3 +39,12 @@ pnpm --filter @octane-xplat/tweaks-desktop test:e2e  # panel web e2e
   type stripping): no enums, namespaces, parameter properties.
 - Protocol contract lives in `packages/tweaks/src/protocol.ts`; the plugin and
   the future panel both import it from `@octane-xplat/tweaks/protocol`.
+
+Styles: `packages/vite` also extracts static CSS — bamboo `css({…})` calls in
+`.ts`/`.tsx` and inline `style={{…}}` in `.tsx`/`.tsrx` — into a style
+manifest. Style drafts edit live (inline via `useTweakStyles`/`__tw` from
+`@octane-xplat/tweaks/dev`; bamboo via `__twCss` marker classes + a web
+MutationObserver leaf) and are written back on Save through `planStyleEdit`.
+Bamboo preview compiles drafts through `loadConfigAndCreateContext` in-memory
+(optional `@bamboocss/node`, degrades to `preview:'unavailable'`); the native
+`__twCss` leaf is a pass-through — bamboo sites mount on web only.

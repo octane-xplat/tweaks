@@ -85,8 +85,10 @@ pnpm --filter @octane-xplat/tweaks-desktop build        # packaged .app + dmg �
 ## Verified / limits
 
 - Verified: package build (`xplat build --targets macos` → signed .app + dmg),
-  transport connect/`state` receive, selftest `set` → playground DOM change +
-  dirty broadcast — through host logs and a browser assertion.
+  transport connect/`state` receive, selftest `set` and `styleSet` → playground
+  DOM changes + dirty broadcast — through host logs and a browser assertion.
+  The Styles section renders in the AppKit view tree (styleSet travels the
+  same NWConnection transport).
 - NOT verified: OS-level input on AppKit controls (clicking the native
   slider/switch), keep-on-top effect, visual appearance (no stylesheets on
   AppKit — inline props only).
