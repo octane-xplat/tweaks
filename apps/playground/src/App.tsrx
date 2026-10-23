@@ -12,7 +12,14 @@ function Details() @{
 		name: 'detailText',
 		group: 'details',
 	});
-	return <Text testID="card.detail">{detailText}</Text>;
+	const chip = { fontWeight: 'bold' };
+	return (
+		<View>
+			<Text testID="card.detail" style={{ paddingTop: 4 }}>{detailText}</Text>
+			{/* Read-only site: the spread makes the object uninstrumentable. */}
+			<Text testID="card.chip" style={{ ...chip, fontSize: 12 }}>chip</Text>
+		</View>
+	);
 }
 
 export function App() @{

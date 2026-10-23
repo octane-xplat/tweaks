@@ -32,6 +32,12 @@
 		"./protocol": {
 			"types": "./types/protocol.d.ts",
 			"default": "./src/protocol.ts"
+		},
+		"./dev": {
+			"types": "./types/generated/dev.d.ts",
+			"web": "./src/dev.tsx",
+			"native": "./src/dev.tsx",
+			"default": "./src/dev.tsx"
 		}
 	},
 	"publishConfig": {

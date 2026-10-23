@@ -4,6 +4,7 @@ import { createFilter, type Plugin, type ViteDevServer } from 'vite'
 import MagicString from 'magic-string'
 import type { TweakEntry } from '@octane-xplat/tweaks/protocol'
 import { extract, type ExtractedTweak } from './extract.ts'
+import { extractStyles, type StyleSite } from './styles.ts'
 import { contentHash, newToken, removeRegistry, sweepRegistry, writeRegistry } from './registry.ts'
 import { saveOverrides } from './save.ts'
 import { TweaksServer } from './server.ts'
@@ -14,6 +15,7 @@ const TWEAKS_PATH = '/__octane_tweaks'
 const SOURCE_RE = /\.(ts|tsx|tsrx)$/
 
 export interface TweaksPluginOptions {
+	bambooCssModules?: RegExp
 	/** Picomatch-style globs for files to instrument. Defaults to all .ts/.tsx/.tsrx under root. */
 	include?: string[]
 	exclude?: string[]
@@ -42,6 +44,7 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 	const token = newToken()
 	// id → manifest slot. Ranges always refer to the file on disk.
 	const manifest = new Map<string, ManifestSlot>()
+	const styleManifest = new Map<string, StyleSite>()
 	// absPath → sha256 of content the plugin itself wrote (HMR suppression).
 	const writtenFiles = new Map<string, string>()
 	let hub: TweaksServer | null = null
@@ -59,6 +62,12 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 			code = fs.readFileSync(absFile, 'utf8')
 		} catch {
 			return
+		}
+		for (const [id] of styleManifest) {
+			if (styleManifest.get(id)?.entry.file === file) styleManifest.delete(id)
+		}
+		for (const site of extractStyles(code, file, { bambooCssModules: options.bambooCssModules }).sites) {
+			styleManifest.set(site.entry.id, site)
 		}
 		for (const tweak of extract(code, file).tweaks) {
 			const entry: TweakEntry = {
@@ -99,8 +108,14 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 		const result = await saveOverrides({
 			root,
 			manifest,
+			styleManifest,
 			overrides: hub?.overrides ?? new Map(),
+			styleDrafts: hub?.styleDrafts ?? new Map(),
 			isDirty,
+			isStyleDirty: (id) => {
+				const d = hub?.styleDrafts.get(id)
+				return !!d && (Object.keys(d.set).length > 0 || d.delete.length > 0)
+			},
 		})
 		// Record what we wrote so the resulting file-change event does not HMR
 		// (the running module still holds the old literal; a reload would lose
@@ -156,6 +171,7 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 				root,
 				name: serverName,
 				getEntry: (id) => manifest.get(id)?.entry,
+				getStyleEntry: (id) => styleManifest.get(id)?.entry,
 				save,
 				log: (m) => server.config.logger.info(m),
 			})
@@ -218,14 +234,35 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 				// transform-time extraction and the disk extraction agree.
 				// Refresh even for tweak-free files: removing the last tweak from
 				// a file must not leave stale manifest entries behind.
-				const hasManifestEntries = [...manifest.values()].some((s) => s.entry.file === rel)
-				if (hasManifestEntries || result.tweaks.length) refreshManifestFromDisk(file)
-				if (!result.tweaks.length && !result.imports.specifier) return null
+				const hasManifestEntries = [...manifest.values()].some((s) => s.entry.file === rel) || [...styleManifest.values()].some((s) => s.entry.file === rel)
+				if (hasManifestEntries || result.tweaks.length || extractStyles(code, rel).sites.length) refreshManifestFromDisk(file)
+				const styles = extractStyles(code, rel, { bambooCssModules: options.bambooCssModules })
+				if (!result.tweaks.length && !result.imports.specifier && !styles.sites.some((x) => x.entry.kind === 'inline' && x.componentBody)) return null
 				const s = new MagicString(code)
 				for (const tweak of result.tweaks) {
 					s.appendLeft(tweak.call.end - 1, `, ${JSON.stringify(tweak.id)}`)
 				}
-				return result.tweaks.length ? { code: s.toString(), map: s.generateMap({ hires: true }) } : null
+				const inline = styles.sites.filter((x) => x.entry.kind === 'inline' && x.componentBody)
+				if (inline.length) {
+					const bodies = new Set<number>()
+					for (const site of inline) {
+						const body = site.componentBody!
+						// tsrx `@{` bodies start at '@' — anchor on the '{' itself.
+						const brace = code.indexOf('{', body.start)
+						if (!bodies.has(brace)) {
+							bodies.add(brace)
+							s.appendLeft(brace + 1, `\n\t\tconst __tw = useTweakStyles()`)
+						}
+						if (site.attribute) {
+							s.appendLeft(site.attribute.start + 1, `__tw(${JSON.stringify(site.entry.id)}, `)
+							s.prependRight(site.attribute.end - 1, `)`)
+						}
+					}
+					s.prepend(`import { useTweakStyles } from '@octane-xplat/tweaks/dev'\n`)
+				}
+				return result.tweaks.length || inline.length
+					? { code: s.toString(), map: s.generateMap({ hires: true }) }
+					: null
 			}
 
 			if (!result.tweaks.length && !result.imports.specifier) return null

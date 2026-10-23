@@ -84,3 +84,24 @@ test('marker in member position is not broken', () => {
 	assert.ok(result)
 	assert.match(result.code, /globalThis\.__OCTANE_TWEAKS__/)
 })
+
+test('dev transform wraps inline style sites with useTweakStyles', () => {
+	const { transform } = setup('serve')
+	const code = `export function App() {
+	return <View style={{ borderRadius: 8, padding: 16 }}>x</View>
+}`
+	const result = transform(code) as { code: string } | null
+	assert.ok(result)
+	assert.match(result.code, /useTweakStyles/)
+	assert.match(result.code, /__tw\("src\/App\.tsx#style:App\/View:1", \{ borderRadius: 8, padding: 16 \}\)/)
+})
+
+test('production leaves inline style sites untouched', () => {
+	const { transform } = setup('build')
+	const code = `export function App() {
+	return <View style={{ borderRadius: 8 }}>x</View>
+}`
+	const result = transform(code) as { code: string } | null
+	assert.ok(!result || !result.code.includes('__tw'))
+	assert.ok(!result || !result.code.includes('@octane-xplat/tweaks/dev'))
+})

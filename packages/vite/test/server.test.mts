@@ -5,6 +5,8 @@ import WebSocket from 'ws'
 import type { TweakEntry, TweakValue } from '@octane-xplat/tweaks/protocol'
 import { TweaksServer } from '../src/server.ts'
 import { extract, type ExtractedTweak } from '../src/extract.ts'
+import { extractStyles, type StyleSite } from '../src/styles.ts'
+import type { StyleEntry } from '@octane-xplat/tweaks/protocol'
 
 const TOKEN = 'test-token'
 
@@ -21,7 +23,9 @@ async function start(
 	saveDelay = 0,
 ): Promise<Harness> {
 	const manifest = new Map<string, { entry: TweakEntry; tweak: ExtractedTweak }>()
+	const styleManifest = new Map<string, StyleSite>()
 	for (const [file, code] of Object.entries(files)) {
+		for (const site of extractStyles(code, file).sites) styleManifest.set(site.entry.id, site)
 		for (const tweak of extract(code, file).tweaks) {
 			manifest.set(tweak.id, {
 				entry: {
@@ -44,6 +48,7 @@ async function start(
 		root: '/proj',
 		name: 'test-app',
 		getEntry: (id) => manifest.get(id)?.entry,
+		getStyleEntry: (id: string) => styleManifest.get(id)?.entry,
 		save: async () => {
 			await new Promise((r) => setTimeout(r, saveDelay))
 			const report = { ok: true, saved: ['src/a.tsx'], errors: [] }
@@ -239,7 +244,7 @@ test('unmountedDirty lists dirty overrides with no mounting client; bare revert 
 		if (s.entries.length === 0) break
 	}
 	assert.deepEqual(s.unmountedDirty, [
-		{ id: 'src/a.tsx#a', file: 'src/a.tsx', name: 'a', group: null, override: 42, value: 8 },
+		{ id: 'src/a.tsx#a', kind: 'tweak', file: 'src/a.tsx', name: 'a', group: null, override: 42, value: 8 },
 	])
 	// Bare revert reverts unmounted dirty overrides too.
 	const reverted = app.next('values')
@@ -250,4 +255,59 @@ test('unmountedDirty lists dirty overrides with no mounting client; bare revert 
 		clean = (await panel.next('state')) as typeof clean
 		if (clean.unmountedDirty.length === 0 && clean.entries.every((e) => !e.dirty)) break
 	}
+})
+
+test('styleSet/styleDelete drafts, validation, mounted styles in state, revert', async (t) => {
+	const { url, close } = await start(t, {
+		'src/App.tsx': `export function App() {
+	return <View style={{ borderRadius: 8, padding: 16 }}><Text style={{ color: 'red' }} /></View>
+}`,
+	})
+	const siteId = 'src/App.tsx#style:App/View:1'
+	const app = new WebSocket(`${url}?token=${TOKEN}&role=app&clientId=a1&label=web`)
+	app.on('message', (d) => console.log && void d)
+	await new Promise((r) => app.once('open', r))
+	app.send(JSON.stringify({ type: 'mount', mounts: [{ id: siteId, value: 0 }] }))
+	const panel = new WebSocket(`${url}?token=${TOKEN}&role=panel&clientId=p1&label=p`)
+	const states: any[] = []
+	const valuesMsgs: any[] = []
+	panel.on('message', (d) => {
+		const m = JSON.parse(String(d))
+		if (m.type === 'state') states.push(m)
+	})
+	app.on('message', (d) => {
+		const m = JSON.parse(String(d))
+		if (m.type === 'values') valuesMsgs.push(m)
+	})
+	await new Promise((r) => panel.once('open', r))
+	await new Promise((r) => setTimeout(r, 60))
+	const state = states.at(-1)
+	const entry = state.styles.find((s: { id: string }) => s.id === siteId)
+	assert.ok(entry, 'mounted inline site in state.styles')
+	assert.equal(entry.dirty, false)
+
+	// Invalid: bad path + read-only kind length>1 for inline.
+	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: ['a', 'b'], value: 1 }))
+	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: [''], value: 1 }))
+	await new Promise((r) => setTimeout(r, 60))
+	assert.equal(valuesMsgs.length, 0)
+
+	// Valid set + delete.
+	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: ['padding'], value: 24 }))
+	panel.send(JSON.stringify({ type: 'styleDelete', id: siteId, path: ['borderRadius'] }))
+	await new Promise((r) => setTimeout(r, 80))
+	const vals = valuesMsgs.at(-1)
+	assert.deepEqual(vals.styles[siteId], {
+		kind: 'inline',
+		set: { padding: 24 },
+		delete: ['borderRadius'],
+	})
+	assert.equal(states.at(-1).styles.find((s: { id: string }) => s.id === siteId).dirty, true)
+
+	// Revert the site.
+	panel.send(JSON.stringify({ type: 'revert', ids: [siteId] }))
+	await new Promise((r) => setTimeout(r, 60))
+	assert.equal(states.at(-1).styles.find((s: { id: string }) => s.id === siteId).dirty, false)
+	assert.equal(valuesMsgs.at(-1).styles[siteId], undefined)
+	app.close(); panel.close(); await close()
 })

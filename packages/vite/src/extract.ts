@@ -76,7 +76,7 @@ interface LiteralValue {
 }
 
 /** Writable iff: string literal (no template), numeric literal, -<numeric>, boolean literal. */
-function literalOf(node: EstreeNode | undefined): LiteralValue | null {
+export function literalOf(node: EstreeNode | undefined): LiteralValue | null {
 	if (!node) return null
 	if (node.type === 'Literal') {
 		const v = node.value

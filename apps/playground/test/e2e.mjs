@@ -15,25 +15,34 @@ const APP_FILE = path.join(ROOT, 'src/App.tsrx')
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+let serverLog = null
 async function waitFor(fn, what, timeout = 20000) {
 	const deadline = Date.now() + timeout
 	for (;;) {
 		const v = await fn()
 		if (v) { return v }
-		if (Date.now() > deadline) { throw new Error(`timeout: ${what}`) }
+		if (Date.now() > deadline) {
+		if (serverLog) { console.error('dev log:\n' + serverLog.join('')) }
+		throw new Error(`timeout: ${what}`)
+	}
 		await sleep(100)
 	}
 }
 
+process.on('uncaughtException', (e) => { console.error('UNCAUGHT@', e) })
+process.on('unhandledRejection', (e) => {
+	console.error('UNHANDLED', e)
+})
 async function main() {
 	const originalSource = fs.readFileSync(APP_FILE, 'utf8')
-	const dev = spawn('pnpm', ['exec', 'vite', '--port', String(PORT), '--strictPort'], {
+	const dev = spawn('pnpm', ['exec', 'vite', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], {
 		cwd: ROOT,
 		stdio: ['ignore', 'pipe', 'pipe'],
 	})
-	const serverLog = []
+	serverLog = []
 	dev.stdout.on('data', (d) => serverLog.push(String(d)))
 	dev.stderr.on('data', (d) => serverLog.push(String(d)))
+	dev.on('exit', (c) => serverLog.push(`[dev exited code=${c}]`))
 
 	let browser
 	const restore = () => fs.writeFileSync(APP_FILE, originalSource)
@@ -66,8 +75,10 @@ async function main() {
 			}
 		}, 'dev server responds')
 
+		console.log('· server responds')
 		browser = await chromium.launch()
 		const page = await browser.newPage()
+		console.log('· browser up')
 		const errors = []
 		page.on('pageerror', (e) => errors.push(String(e)))
 		await page.goto(`http://localhost:${PORT}/`)
@@ -77,6 +88,7 @@ async function main() {
 		})
 
 		// 2. Panel client from the registry entry.
+		console.log('· page loaded')
 		const panel = new WebSocket(
 			`${entry.url}?token=${entry.token}&role=panel&clientId=panel-1&label=web`,
 		)
@@ -128,6 +140,17 @@ async function main() {
 		assert.deepEqual(radiusEntry.input, { type: 'number', min: 0, max: 40, step: 1 })
 		const messageEntry = state.entries.find((e) => e.id === 'src/App.tsrx#message')
 		assert.equal(messageEntry.writable, false, 'non-literal default is read-only')
+		const styleIds = (state.styles ?? []).map((e) => e.id)
+		for (const want of [
+			'src/App.tsrx#style:App/View:1',
+			'src/App.tsrx#style:App/Text:2',
+			'src/App.tsrx#style:Details/Text:1',
+			'src/App.tsrx#style:Details/Text:2',
+		]) {
+			assert.ok(styleIds.includes(want), `missing mounted style site ${want} (got ${styleIds})`)
+		}
+		const chip = state.styles.find((e) => e.id === 'src/App.tsrx#style:Details/Text:2')
+		assert.equal(chip.writable, false, 'spread site is read-only')
 		console.log('· state lists all mounted entries; read-only inference works')
 
 		// 3. Unmount: hide details → entry disappears from state.
@@ -167,6 +190,34 @@ async function main() {
 		assert.equal(await page.evaluate(() => globalThis.__marker), 'persisted')
 		console.log('· set applies to the DOM without reload')
 
+		// 4b. Inline style preview: set + add + delete via styleSet/styleDelete.
+		const titleSite = 'src/App.tsrx#style:App/Text:2'
+		panel.send(JSON.stringify({ type: 'styleSet', id: titleSite, path: ['fontSize'], value: 30 }))
+		await waitFor(async () => {
+			const v = await page.locator('[data-testid="card.title"]').evaluate((el) => globalThis.getComputedStyle(el).fontSize)
+			return v === '30px' ? true : null
+		}, 'styleSet fontSize applied')
+		panel.send(JSON.stringify({ type: 'styleSet', id: titleSite, path: ['marginTop'], value: 9 }))
+		await waitFor(async () => {
+			const v = await page.locator('[data-testid="card.title"]').evaluate((el) => globalThis.getComputedStyle(el).marginTop)
+			return v === '9px' ? true : null
+		}, 'styleSet add applied')
+		const detailSite = 'src/App.tsrx#style:Details/Text:1'
+		panel.send(JSON.stringify({ type: 'styleDelete', id: detailSite, path: ['paddingTop'] }))
+		await waitFor(async () => {
+			const v = await page.locator('[data-testid="card.detail"]').evaluate((el) => globalThis.getComputedStyle(el).paddingTop)
+			return v === '0px' ? true : null
+		}, 'styleDelete applied')
+		// Details site leaves state when unmounted.
+		await page.locator('[data-testid="details.toggle"]').click()
+		await waitFor(async () => {
+			const st = await next('state')
+			return !st.styles.some((e) => e.id === detailSite) ? true : null
+		}, 'details style site unmounts')
+		await page.locator('[data-testid="details.toggle"]').click()
+		await next('state')
+		console.log('· inline style set/add/delete apply; conditional sites unmount')
+
 		// 5. Save: counter to 3, save writes the literal, state survives.
 		await page.locator('[data-testid="counter.increment"]').click()
 		await page.locator('[data-testid="counter.increment"]').click()
@@ -191,6 +242,15 @@ async function main() {
 			return e && e.dirty === false ? latest : null
 		}, 'radius dirty cleared after save')
 		console.log('· save writes source, suppresses HMR, clears dirty')
+
+		// Full reload: saved source compiles fresh — inline values come from disk.
+		await page.reload()
+		await page.locator('[data-testid="card.title"]').waitFor({ timeout: 20000 })
+		const reloaded = await page.locator('[data-testid="card.title"]').evaluate((el) => globalThis.getComputedStyle(el).fontSize)
+		assert.equal(reloaded, '30px', 'reloaded page shows saved fontSize')
+		const detailPt = await page.locator('[data-testid="card.detail"]').evaluate((el) => globalThis.getComputedStyle(el).paddingTop)
+		assert.equal(detailPt, '0px', 'reloaded page shows deleted paddingTop')
+		console.log('· full reload shows saved inline styles from source')
 
 		// 6. A manual edit still hot-updates normally.
 		const manual = originalSource.replace('useTweak(8,', 'useTweak(30,').replace(
@@ -218,5 +278,6 @@ async function main() {
 
 main().catch((error) => {
 	console.error(error)
+	if (serverLog) { console.error('dev log:\n' + serverLog.join('')) }
 	process.exit(1)
 })

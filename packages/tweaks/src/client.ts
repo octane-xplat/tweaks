@@ -1,4 +1,4 @@
-import type { AppToServer, ServerToApp, TweakValue } from './protocol'
+import type { AppToServer, ServerToApp, ServerToAppStyles, StyleValue, TweakValue } from './protocol'
 import { clientLabel, createSocket, socketUrl, type TweaksSocket } from './connection'
 
 // __OCTANE_TWEAKS__ is declared in globals.d.ts and injected by
@@ -28,6 +28,8 @@ class Client {
 	// a second instance of an already-mounted id — receives the live override
 	// immediately instead of showing its literal until the next broadcast.
 	private overrides = new Map<string, TweakValue>()
+	private styles: ServerToAppStyles = {}
+	private styleListeners = new Set<() => void>()
 	private hasValues = false
 	private readonly clientId =
 		(globalThis as Record<string, unknown>).crypto &&
@@ -123,6 +125,8 @@ class Client {
 			}
 			if (message.type !== 'values') return
 			this.overrides = new Map(Object.entries(message.values))
+			this.styles = message.styles ?? {}
+			for (const l of this.styleListeners) l()
 			this.hasValues = true
 			for (const [id, entry] of this.mounted) {
 				const override = this.overrides.get(id) ?? null
@@ -148,6 +152,37 @@ class Client {
 			// A dying socket surfaces through onclose; sending must never throw
 			// into user render code.
 		}
+	}
+	// Style sites mount/unmount through the same refcounted machinery; they
+	// carry no runtime value, so mount reports a 0 placeholder.
+	mountStyle(id: string) {
+		const entry = this.mounted.get(id)
+		if (entry) entry.count++
+		else {
+			this.mounted.set(id, { value: 0, count: 1, listeners: new Set() })
+			this.pendingMounts.set(id, 0)
+		}
+		this.queueFlush()
+	}
+
+	unmountStyle(id: string) {
+		const entry = this.mounted.get(id)
+		if (!entry) return
+		if (--entry.count <= 0) {
+			this.mounted.delete(id)
+			this.pendingUnmounts.add(id)
+		}
+		this.queueFlush()
+	}
+
+	getStyle(id: string): { set: Record<string, StyleValue>; delete: string[] } | null {
+		const s = this.styles[id]
+		return s && s.kind === 'inline' ? s : null
+	}
+
+	onStyles(listener: () => void): () => void {
+		this.styleListeners.add(listener)
+		return () => this.styleListeners.delete(listener)
 	}
 }
 

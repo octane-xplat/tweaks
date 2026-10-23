@@ -7,6 +7,11 @@ import type {
 	PanelToServer,
 	ServerToApp,
 	ServerToPanel,
+	PanelStyleEntry,
+	ServerToAppStyles,
+	StyleDraft,
+	StyleEntry,
+	StyleValue,
 	TweakEntry,
 	UnmountedDirtyEntry,
 	TweakValue,
@@ -28,6 +33,7 @@ export interface ServerDeps {
 	root: string
 	name: string
 	getEntry(id: string): TweakEntry | undefined
+	getStyleEntry(id: string): StyleEntry | undefined
 	save(): Promise<SaveReport>
 	log(message: string): void
 }
@@ -51,6 +57,8 @@ export class TweaksServer {
 	private runtimeValues = new Map<string, TweakValue>()
 	/** The override map broadcast to apps; absence of an id means "no override". */
 	readonly overrides = new Map<string, TweakValue>()
+	/** Style drafts per site id; an empty draft means "reverted". */
+	readonly styleDrafts = new Map<string, StyleDraft>()
 	private saving = false
 	private deps: ServerDeps
 
@@ -82,7 +90,11 @@ export class TweaksServer {
 		}
 		this.sockets.add(socket)
 		if (role === 'app') {
-			this.sendTo(socket, { type: 'values', values: Object.fromEntries(this.overrides) })
+			this.sendTo(socket, {
+				type: 'values',
+				values: Object.fromEntries(this.overrides),
+				styles: this.styleValuesMessage(),
+			})
 		} else {
 			this.sendTo(socket, this.stateMessage())
 		}
@@ -142,10 +154,66 @@ export class TweaksServer {
 			this.overrides.set(message.id, message.value)
 			this.broadcastValues()
 			this.broadcastState()
+		} else if (message.type === 'styleSet') {
+			const entry = this.deps.getStyleEntry(message.id)
+			const valid =
+				entry &&
+				entry.writable &&
+				Array.isArray(message.path) &&
+				message.path.length > 0 &&
+				message.path.every((p) => typeof p === 'string' && p.length > 0) &&
+				(typeof message.value === 'string' || typeof message.value === 'number') &&
+				(entry.kind !== 'inline' || message.path.length === 1) &&
+				// An added property can't target a path under a read-only/dynamic one.
+				!entry.properties.some(
+					(p) =>
+						!p.editable &&
+						p.path.length < message.path.length &&
+						message.path.slice(0, p.path.length).join('.') === p.path.join('.'),
+				)
+			if (!valid) {
+				this.deps.log(`[tweaks] ignoring invalid styleSet for ${message.id}`)
+				return
+			}
+			const draft = this.styleDrafts.get(message.id) ?? { set: {}, delete: [] }
+			draft.set[message.path.join('.')] = message.value
+			this.styleDrafts.set(message.id, draft)
+			this.broadcastValues()
+			this.broadcastState()
+		} else if (message.type === 'styleDelete') {
+			const entry = this.deps.getStyleEntry(message.id)
+			const key = message.path?.join('.')
+			const existing = entry?.properties.find((p) => p.path.join('.') === key)
+			const draft = this.styleDrafts.get(message.id)
+			const valid =
+				entry &&
+				entry.writable &&
+				Array.isArray(message.path) &&
+				message.path.length > 0 &&
+				message.path.every((p) => typeof p === 'string' && p.length > 0) &&
+				(entry.kind !== 'inline' || message.path.length === 1) &&
+				(existing?.editable || (draft && key! in draft.set))
+			if (!valid) {
+				this.deps.log(`[tweaks] ignoring invalid styleDelete for ${message.id}`)
+				return
+			}
+			const d = draft ?? { set: {}, delete: [] }
+			if (d.set[key!] !== undefined) delete d.set[key!]
+			else if (!d.delete.includes(key!)) d.delete.push(key!)
+			this.styleDrafts.set(message.id, d)
+			this.broadcastValues()
+			this.broadcastState()
 		} else if (message.type === 'revert') {
 			// Omitted ids = all dirty overrides, mounted or not — matching Save's scope.
-			const ids = message.ids ?? [...this.overrides.keys()].filter((id) => this.isDirty(id))
+			const dirtyStyle = [...this.styleDrafts.keys()].filter((id) => this.isStyleDirty(id))
+			const ids =
+				message.ids ??
+				[...this.overrides.keys()].filter((id) => this.isDirty(id)).concat(dirtyStyle)
 			for (const id of ids) {
+				if (this.styleDrafts.has(id)) {
+					this.styleDrafts.delete(id)
+					continue
+				}
 				const entry = this.deps.getEntry(id)
 				// Deliberately set the override to the source literal rather than
 				// deleting it: after a Save with HMR suppressed, the running module
@@ -180,6 +248,11 @@ export class TweaksServer {
 		const entry = this.deps.getEntry(id)
 		const override = this.overrides.get(id)
 		return override !== undefined && override !== (entry?.value ?? null)
+	}
+
+	private isStyleDirty(id: string): boolean {
+		const d = this.styleDrafts.get(id)
+		return !!d && (Object.keys(d.set).length > 0 || d.delete.length > 0)
 	}
 
 	private validValue(entry: TweakEntry, value: TweakValue): boolean {
@@ -231,13 +304,42 @@ export class TweaksServer {
 				mountedBy: [...clients],
 			})
 		}
+		const styles: PanelStyleEntry[] = []
+		for (const id of [...this.mountedBy.keys()]) {
+			const entry = this.deps.getStyleEntry(id)
+			if (!entry) continue
+			const draft = this.styleDrafts.get(id) ?? { set: {}, delete: [] }
+			styles.push({
+				...entry,
+				draft,
+				dirty: this.isStyleDirty(id),
+				mountedBy: [...(this.mountedBy.get(id) ?? [])],
+				preview: 'live',
+			})
+		}
 		const unmountedDirty: UnmountedDirtyEntry[] = []
+		for (const id of [...this.styleDrafts.keys()]) {
+			if (this.mountedBy.get(id)?.size) continue
+			if (!this.isStyleDirty(id)) continue
+			const entry = this.deps.getStyleEntry(id)
+			if (!entry) continue
+			unmountedDirty.push({
+				id,
+				kind: 'style',
+				file: entry.file,
+				name: entry.label,
+				group: null,
+				override: JSON.stringify(this.styleDrafts.get(id)),
+				value: null,
+			})
+		}
 		for (const [id, override] of this.overrides) {
 			if (this.mountedBy.get(id)?.size) continue
 			if (!this.isDirty(id)) continue
 			const entry = this.deps.getEntry(id)
 			unmountedDirty.push({
 				id,
+				kind: 'tweak',
 				file: entry?.file ?? id.split('#')[0],
 				name: entry?.name ?? id.split('#')[1] ?? id,
 				group: entry?.group ?? null,
@@ -253,6 +355,7 @@ export class TweaksServer {
 				.map((s) => ({ clientId: s.clientId, label: s.label })),
 			entries,
 			unmountedDirty,
+			styles,
 		}
 	}
 
@@ -264,8 +367,21 @@ export class TweaksServer {
 		}
 	}
 
+	private styleValuesMessage(): ServerToAppStyles {
+		const styles: ServerToAppStyles = {}
+		for (const [id, draft] of this.styleDrafts) {
+			const entry = this.deps.getStyleEntry(id)
+			if (entry?.kind === 'inline') styles[id] = { kind: 'inline', set: draft.set, delete: draft.delete }
+		}
+		return styles
+	}
+
 	private broadcastValues() {
-		const message: ServerToApp = { type: 'values', values: Object.fromEntries(this.overrides) }
+		const message: ServerToApp = {
+			type: 'values',
+			values: Object.fromEntries(this.overrides),
+			styles: this.styleValuesMessage(),
+		}
 		for (const socket of this.sockets) {
 			if (socket.role === 'app') this.sendTo(socket, message)
 		}
