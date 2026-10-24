@@ -12,6 +12,7 @@
 		"typecheck": "pnpm -r typecheck",
 		"lint": "pnpm --filter playground lint",
 		"dev:octane": "pnpm install --ignore-scripts --lockfile=false --config.pnpmfile=./links/octane.cjs",
-		"dev:published": "./links/dev-published.sh"
+		"dev:published": "./links/dev-published.sh",
+		"test:ios": "node test/ios/run.mjs"
 	}
 }

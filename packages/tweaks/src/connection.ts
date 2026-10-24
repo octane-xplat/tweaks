@@ -29,10 +29,17 @@ export function createSocket(define: TweaksDefine, url: string): TweaksSocket | 
 }
 
 export function socketUrl(define: TweaksDefine, clientId: string, label: string): string | null {
-	if (!define.fallbackOrigin) {
+	// NativeScript dev publishes the Mac's LAN origin to the device as
+	// __NS_HTTP_ORIGIN__ (the same one its HMR socket uses). Loopback origins
+	// only resolve on the simulator; the LAN origin works there too and on
+	// physical devices.
+	const nsOrigin = (globalThis as Record<string, unknown>).__NS_HTTP_ORIGIN__
+	const origin =
+		typeof nsOrigin === 'string' && nsOrigin.length ? nsOrigin : define.fallbackOrigin
+	if (!origin) {
 		return null
 	}
-	const base = define.fallbackOrigin.replace(/^http/, 'ws')
+	const base = origin.replace(/^http/, 'ws')
 	const query = `token=${encodeURIComponent(define.token)}&role=app&clientId=${clientId}&label=${label}`
 	return `${base}${define.path}?${query}`
 }

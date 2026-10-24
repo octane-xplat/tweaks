@@ -265,19 +265,20 @@ test('styleSet/styleDelete drafts, validation, mounted styles in state, revert',
 	})
 	const siteId = 'src/App.tsx#style:App/View:1'
 	const app = new WebSocket(`${url}?token=${TOKEN}&role=app&clientId=a1&label=web`)
-	app.on('message', (d) => console.log && void d)
+	const valuesMsgs: any[] = []
+	// Listen before open: the server emits an async connect-time values
+	// broadcast that must be captured rather than raced.
+	app.on('message', (d) => {
+		const m = JSON.parse(String(d))
+		if (m.type === 'values') valuesMsgs.push(m)
+	})
 	await new Promise((r) => app.once('open', r))
 	app.send(JSON.stringify({ type: 'mount', mounts: [{ id: siteId, value: 0 }] }))
 	const panel = new WebSocket(`${url}?token=${TOKEN}&role=panel&clientId=p1&label=p`)
 	const states: any[] = []
-	const valuesMsgs: any[] = []
 	panel.on('message', (d) => {
 		const m = JSON.parse(String(d))
 		if (m.type === 'state') states.push(m)
-	})
-	app.on('message', (d) => {
-		const m = JSON.parse(String(d))
-		if (m.type === 'values') valuesMsgs.push(m)
 	})
 	await new Promise((r) => panel.once('open', r))
 	await new Promise((r) => setTimeout(r, 60))
@@ -286,11 +287,14 @@ test('styleSet/styleDelete drafts, validation, mounted styles in state, revert',
 	assert.ok(entry, 'mounted inline site in state.styles')
 	assert.equal(entry.dirty, false)
 
-	// Invalid: bad path + read-only kind length>1 for inline.
+	// Invalid: bad path + read-only kind length>1 for inline. The async
+	// connect-time values broadcast may still be in flight, so compare
+	// against a baseline count rather than zero.
+	const baseline = valuesMsgs.length
 	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: ['a', 'b'], value: 1 }))
 	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: [''], value: 1 }))
 	await new Promise((r) => setTimeout(r, 60))
-	assert.equal(valuesMsgs.length, 0)
+	assert.equal(valuesMsgs.length, baseline)
 
 	// Valid set + delete.
 	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: ['padding'], value: 24 }))

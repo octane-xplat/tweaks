@@ -28,6 +28,7 @@ class Client {
 	// a second instance of an already-mounted id — receives the live override
 	// immediately instead of showing its literal until the next broadcast.
 	private overrides = new Map<string, TweakValue>()
+	private warnedConnect = false
 	private styles: ServerToAppStyles = {}
 	private styleListeners = new Set<() => void>()
 	private hasValues = false
@@ -104,9 +105,11 @@ class Client {
 		if (!socket) return
 		this.connecting = true
 		socket.onopen = () => {
+			if (this.socket === socket) return
 			this.connecting = false
 			this.socket = socket
 			this.retries = 0
+			everOpened = true
 			// Re-send the full mounted set on every (re)connect.
 			if (this.mounted.size) {
 				this.send({
@@ -141,7 +144,15 @@ class Client {
 			const delay = Math.min(1000 * 2 ** this.retries++, 5000)
 			setTimeout(() => this.connect(), delay)
 		}
-		socket.onclose = retry
+		let everOpened = false
+		socket.onclose = () => {
+			if (!everOpened && !this.warnedConnect) {
+				this.warnedConnect = true
+				// Never log the URL query: it carries the session token.
+				console.warn(`[octane-tweaks] could not connect to ${url.split('?')[0]}`)
+			}
+			retry()
+		}
 		socket.onerror = () => socket.close()
 	}
 

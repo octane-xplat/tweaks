@@ -30,6 +30,11 @@ pnpm --filter @octane-xplat/tweaks-desktop dev:web   # panel web build :5211
 pnpm --filter @octane-xplat/tweaks-desktop dev       # macOS app via xplat dev
 pnpm --filter @octane-xplat/tweaks-desktop build     # packaged .app → artifacts/
 pnpm --filter @octane-xplat/tweaks-desktop test:e2e  # panel web e2e
+pnpm test:ios            # iOS simulator verification: scaffolds the pinned
+                         # create-octane-xplat template into artifacts/ios/,
+                         # packs+installs the tweaks packages, applies
+                         # fixtures/ios-app, runs xplat dev <UDID> + assertions
+                         # (`--app <dir>` reuses a prepared app)
 ```
 
 ## Conventions

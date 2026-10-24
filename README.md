@@ -47,6 +47,25 @@ renderer; bamboo preview is **web-only** (native leaf is inert — bamboo sites
 don't mount there). When `@bamboocss/node` can't compile a draft the site
 shows `Preview unavailable` — Save still works.
 
+## iOS verification status
+
+Verified on the iPhone simulator: the app client dials `globalThis.__NS_HTTP_ORIGIN__`
+(the LAN origin NS publishes for its own HMR socket — also reachable from
+physical devices) with the plugin-injected origin as fallback, mounts the
+`tweaks` and inline style sites, re-renders on panel `set` (`[tweaks-render]`
+in the device log), and restores on `revert`. `styleSet` is verified
+server-side (draft accepted + broadcast to the app); on-device application of
+inline style drafts is not separately asserted — the shared `__tw` merge path
+is proven on web. Android and physical devices unverified.
+
+Consumer requirements on iOS: the app must `import '@valor/nativescript-websockets'`
+(already a template dependency) so `globalThis.WebSocket` exists, prepend
+`tweaks()` to the resolved `xplatNative` plugin list (see
+`fixtures/ios-app/vite.config.native.mts`), and tolerate
+`NS_VENDOR_EXCLUDE=@octane-xplat/ui` until the framework vendors src-shipped
+packages. Workspace-subdir apps (root-hoisted `node_modules`) do not boot —
+see findings.
+
 ## Framework findings (gaps hit while building this)
 
 - `vite:define` doesn't reach the dev client (worked around by transform injection).
@@ -57,3 +76,20 @@ shows `Preview unavailable` — Save still works.
 - `Section` defaults to row direction on AppKit (use explicit `VStack`).
 - `Badge` with raw string children throws `cannot contain text-only children` on AppKit (wrap in `<Text>`).
 - `vx-view` default padding (16px) outranks Bamboo utility layers on web — `p_*`/`padding` utilities don't apply to vx-view elements.
+- Published `create-octane-xplat@0.17.1` template fails `xplat dev` on iOS: the
+  esbuild vendor bundle cannot resolve `@octane-xplat/ui`'s extensionless src/
+  imports (160 errors, e.g. `Could not resolve "./useResizable"`), and
+  `sourceOnlyDeps()` detection skips ui because its `exports` has a "." key.
+  `NS_VENDOR_EXCLUDE=@octane-xplat/ui` (per-module serving) boots cleanly.
+- Workspace-subdir apps in a hoisted pnpm workspace can't boot under `xplat
+  dev`: `sourceOnlyDeps()` reads `join(cwd,'node_modules',...)` which doesn't
+  exist under `apps/<app>`; per-module serving then reaches
+  `__octaneUniversalPlan is not a function` at ui `View.tsrx` (the octane
+  transform never covers those modules). Evidence: playground run vs stock
+  control, `artifacts/ios/dev-session.log`.
+- `xplat dev` does not accept `--device` — pass the device target id
+  positionally (`xplat dev <UDID>`); `ns` boots simulators via `open
+  <DEVELOPER_DIR>/Applications/Simulator.app` which fails when `xcode-select`
+  points at a partial Xcode (no sudo → set `DEVELOPER_DIR` per-process and
+  pre-boot with `xcrun simctl boot`); dead sessions leave `target_busy` —
+  clear with `xplat session end <id>`.

@@ -1,9 +1,10 @@
-node_modules
-dist
-types/
-/links/octane-xplat
-apps/playground/src/styled-system/
-*.tsbuildinfo
 .DS_Store
-apps/desktop/artifacts/
 *.dmg
+*.tsbuildinfo
+/links/octane-xplat
+apps/desktop/artifacts/
+apps/playground/src/styled-system/
+artifacts/
+dist
+node_modules
+types/
