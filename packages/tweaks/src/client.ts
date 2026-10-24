@@ -31,6 +31,7 @@ class Client {
 	private warnedConnect = false
 	private styles: ServerToAppStyles = {}
 	private styleListeners = new Set<() => void>()
+	private pickListeners = new Set<(active: boolean) => void>()
 	private hasValues = false
 	private readonly clientId =
 		(globalThis as Record<string, unknown>).crypto &&
@@ -126,6 +127,10 @@ class Client {
 			} catch {
 				return
 			}
+			if (message.type === 'pick') {
+				for (const l of this.pickListeners) l(message.active)
+				return
+			}
 			if (message.type !== 'values') return
 			this.overrides = new Map(Object.entries(message.values))
 			this.styles = message.styles ?? {}
@@ -194,6 +199,18 @@ class Client {
 
 	getStyleRaw(id: string) {
 		return this.styles[id] ?? null
+	}
+
+	// Click-to-pick: web installs a listener (native leaves none — the
+	// messages are ignored there). Returns an unsubscribe.
+	// No connect() here: pick listeners only matter once a site mounted and
+	// opened the socket; registering must not open one on module eval.
+	onPick(listener: (active: boolean) => void) {
+		this.pickListeners.add(listener)
+		return () => this.pickListeners.delete(listener)
+	}
+	sendPicked(ids: string[]) {
+		this.send({ type: 'picked', ids })
 	}
 
 	onStyles(listener: () => void): () => void {

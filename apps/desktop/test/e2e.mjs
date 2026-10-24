@@ -7,6 +7,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { chromium } from 'playwright'
+import WebSocket from 'ws'
 
 const PLAYGROUND = new URL('../../playground', import.meta.url).pathname
 const DESKTOP = new URL('..', import.meta.url).pathname
@@ -195,6 +196,23 @@ try {
 		return cls.includes('bg-c_surface') && !cls.includes('opacity_0.5') ? true : null
 	}, 'card site revert restores classes')
 	console.log('· styles UI: site revert restores')
+
+	// Pick: button follows state.picking; an app 'picked' filters the Styles
+	// list; Show all restores it.
+	const pickBtn = tid(panel, 'pick')
+	await waitFor(async () => (await pickBtn.innerText().catch(() => '')).match(/pick/i) ? true : null, 'pick button present')
+	const fakeApp = new WebSocket(`${entry.url}?token=${entry.token}&role=app&clientId=picker&label=web`)
+	await new Promise((r) => fakeApp.once('open', r))
+	await pickBtn.click()
+	await waitFor(async () => (await pickBtn.innerText()) === 'Cancel pick', 'pick button follows state.picking')
+	fakeApp.send(JSON.stringify({ type: 'picked', ids: [titleSite] }))
+	await waitFor(async () => (await tid(panel, 'pick.filter').innerText()).includes('1 picked'), 'pick.filter shown')
+	await waitFor(async () => (await tid(panel, `stylesite-${titleSite}`).count()) === 1, 'picked site renders')
+	await waitFor(async () => (await tid(panel, `stylesite-${cardSite}`).count()) === 0, 'other sites filtered out')
+	await tid(panel, 'pick.clear').click()
+	await waitFor(async () => (await tid(panel, `stylesite-${cardSite}`).count()) === 1, 'Show all restores')
+	fakeApp.close()
+	console.log('· pick filters the styles section; Show all restores')
 
 	// Save: click Save in the panel; source updated; footer clears; app counter intact.
 	await app.locator('[data-testid="counter.increment"]').click()

@@ -228,3 +228,43 @@ const STYLE_SITE = {
 	],
 	writable: true, draft: { set: {}, delete: [] }, dirty: false, mountedBy: ['app'], preview: 'live',
 } as never
+
+test('save notifies listeners and flips saving', () => {
+	const { model, transports } = setup()
+	model.onServerMessage(JSON.stringify(stateMsg([entry({ dirty: true })])))
+	let notified = 0
+	model.subscribe(() => notified++)
+	model.save()
+	assert.equal(model.saveResult, null)
+	assert.equal(notified, 1)
+	assert.ok(transports[0].sent.some((m) => JSON.parse(m).type === 'save'))
+})
+
+test('pick filter narrows groupedStyles and is pruned/cleared', () => {
+	const { model } = setup()
+	const s1 = { ...STYLE_SITE, id: 'f1#a' }
+	const s2 = { ...STYLE_SITE, id: 'f2#b' }
+	model.onServerMessage(JSON.stringify({ ...stateMsg([]), styles: [s1, s2] }))
+	assert.equal(model.groupedStyles().flatMap((g) => g.sites).length, 2)
+
+	model.onServerMessage(JSON.stringify({ type: 'picked', clientId: 'c', ids: [s2.id] }))
+	assert.deepEqual(model.pickFilter, [s2.id])
+	assert.deepEqual(
+		model.groupedStyles().flatMap((g) => g.sites.map((s) => s.id)),
+		[s2.id],
+	)
+	model.clearPickFilter()
+	assert.equal(model.pickFilter, null)
+	assert.equal(model.groupedStyles().flatMap((g) => g.sites).length, 2)
+
+	// [] cancel leaves no filter.
+	model.onServerMessage(JSON.stringify({ type: 'picked', clientId: 'c', ids: [] }))
+	assert.equal(model.pickFilter, null)
+
+	// Filter prunes to mounted sites and clears when none remain.
+	model.onServerMessage(JSON.stringify({ type: 'picked', clientId: 'c', ids: [s1.id, s2.id] }))
+	model.onServerMessage(JSON.stringify({ ...stateMsg([]), styles: [s1] }))
+	assert.deepEqual(model.pickFilter, [s1.id])
+	model.onServerMessage(JSON.stringify({ ...stateMsg([]), styles: [] }))
+	assert.equal(model.pickFilter, null)
+})

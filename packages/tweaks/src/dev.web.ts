@@ -1,7 +1,8 @@
 // Web leaf: inline preview via useTweakStyles (shared impl) plus __twCss for
 // bamboo css() sites. __twCss appends a marker class; a MutationObserver tracks
 // marked elements as mounted sites and applies override {className, css}.
-export { useTweakStyles } from './useTweakStyles'
+import { createUseTweakStyles } from './useTweakStyles'
+import { markerSiteIds, inlineSiteIds } from './pick.web'
 import { client } from './client'
 
 const MARKER_PREFIX = 'tw_'
@@ -135,8 +136,16 @@ function ensureObserver() {
 
 export function __twCss(id: string, className: string): string {
 	sites.set(id, { id, classes: className.split(/\s+/).filter(Boolean) })
+	markerSiteIds.set(markerFor(id), id)
 	ensureObserver()
 	// Mounting is the observer's job once the marker lands on an element.
 	scan()
 	return `${className} ${markerFor(id)}`
 }
+
+// Inline style sites tag via the --tw-site custom property; the marker
+// function's hash gives a stable opaque value the pick hit-test maps back.
+export const useTweakStyles = createUseTweakStyles((id, style) => {
+	inlineSiteIds.set(markerFor(id), id)
+	return { ...style, '--tw-site': markerFor(id) }
+})

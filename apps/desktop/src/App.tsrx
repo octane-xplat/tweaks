@@ -300,6 +300,12 @@ export function App() @{
 						))}
 						{styleGroups.length ? (
 							<VStack testID="styles.section" style={{ gap: 4, paddingTop: 8 }}>
+								{model.pickFilter ? (
+									<HStack style={{ gap: 8, alignItems: 'center' }}>
+										<Text testID="pick.filter">{`Showing ${model.pickFilter.length} picked sites`}</Text>
+										<Button testID="pick.clear" label="Show all" clickAction={() => model.clearPickFilter()} />
+									</HStack>
+								) : null}
 								<Text style={{ fontWeight: 'bold' }}>Styles</Text>
 								{styleGroups.map((g) => (
 									<VStack key={g.file} style={{ gap: 4, paddingLeft: 4 }}>
@@ -319,6 +325,12 @@ export function App() @{
 					{dirty} unsaved{unmounted ? ` (${unmounted} not on screen)` : ''}
 				</Text>
 				<Button testID="revert-all" label="Revert all" clickAction={() => model.revertAll()} />
+				<Button
+					testID="pick"
+					label={snap.picking ? 'Cancel pick' : 'Pick'}
+					isDisabled={!snap.clients.some((c) => c.label === 'web')}
+					clickAction={() => model.pick(!snap.picking)}
+				/>
 				<Button
 					testID="save"
 					label="Save"

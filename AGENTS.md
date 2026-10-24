@@ -52,4 +52,5 @@ manifest. Style drafts edit live (inline via `useTweakStyles`/`__tw` from
 MutationObserver leaf) and are written back on Save through `planStyleEdit`.
 Bamboo preview compiles drafts through `loadConfigAndCreateContext` in-memory
 (optional `@bamboocss/node`, degrades to `preview:'unavailable'`); the native
-`__twCss` leaf is a pass-through — bamboo sites mount on web only.
+`__twCss` leaf is a pass-through — bamboo sites mount on web only. Protocol v3 adds `pick`/`picked` for web
+click-to-pick (`state.picking`; panel filter via `pickFilter`).

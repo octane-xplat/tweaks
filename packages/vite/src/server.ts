@@ -53,6 +53,7 @@ interface Socket {
  */
 export class TweaksServer {
 	private wss = new WebSocketServer({ noServer: true })
+	private picking = false
 	private sockets = new Set<Socket>()
 	private mountedBy = new Map<string, Set<string>>()
 	private runtimeValues = new Map<string, TweakValue>()
@@ -93,13 +94,14 @@ export class TweaksServer {
 		}
 		this.sockets.add(socket)
 		if (role === 'app') {
-			void this.buildStyleValues().then((styles) =>
+			void this.buildStyleValues().then((styles) => {
 				this.sendTo(socket, {
 					type: 'values',
 					values: Object.fromEntries(this.overrides),
 					styles,
-				}),
-			)
+				})
+				if (this.picking) this.sendTo(socket, { type: 'pick', active: true })
+			})
 		} else {
 			this.sendTo(socket, this.stateMessage())
 		}
@@ -125,6 +127,11 @@ export class TweaksServer {
 					changed = true
 				}
 			}
+			if (socket.role === 'panel' && this.picking && ![...this.sockets].some((x) => x.role === 'panel')) {
+				this.picking = false
+				this.broadcastPick(false)
+				changed = true
+			}
 			if (changed) this.broadcastState()
 		})
 	}
@@ -146,10 +153,35 @@ export class TweaksServer {
 				}
 			}
 			this.broadcastState()
+		} else if (message.type === 'picked') {
+			// Only honored while picking; ids filtered to mounted style sites.
+			if (!this.picking) return
+			this.picking = false
+			this.broadcastPick(false)
+			const mountedStyles = new Set(
+				[...this.mountedBy.keys()].filter((id) => this.deps.getStyleEntry?.(id)),
+			)
+			const ids = message.ids.filter((id) => mountedStyles.has(id))
+			for (const s of this.sockets) {
+				if (s.role === 'panel') this.sendTo(s, { type: 'picked', clientId: socket.clientId, ids })
+			}
+			this.broadcastState()
+		}
+	}
+
+	private broadcastPick(active: boolean) {
+		for (const s of this.sockets) {
+			if (s.role === 'app') this.sendTo(s, { type: 'pick', active })
 		}
 	}
 
 	private async onPanelMessage(socket: Socket, message: PanelToServer) {
+		if (message.type === 'pick') {
+			this.picking = !!message.active
+			this.broadcastPick(this.picking)
+			this.broadcastState()
+			return
+		}
 		if (message.type === 'set') {
 			const entry = this.deps.getEntry(message.id)
 			if (!entry || !this.validValue(entry, message.value)) {
@@ -379,6 +411,7 @@ export class TweaksServer {
 			entries,
 			unmountedDirty,
 			styles,
+			picking: this.picking,
 		}
 	}
 

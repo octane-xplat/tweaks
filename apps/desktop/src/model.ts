@@ -57,6 +57,7 @@ export interface PanelSnapshot {
 	saveResult: { ok: boolean; saved: string[]; errors: { id?: string; file: string; message: string }[] } | null
 	serverName: string | null
 	serverRoot: string | null
+	picking: boolean
 }
 
 // Pure panel model: connection state, the latest server `state` message,
@@ -76,6 +77,9 @@ export class PanelModel {
 	entries: PanelEntry[] = []
 	styles: PanelStyleEntry[] = []
 	unmountedDirty: UnmountedDirtyEntry[] = []
+	picking = false
+	// ids from the last picked message; null = no filter ([] cancel keeps null).
+	pickFilter: string[] | null = null
 	saving = false
 	saveResult: PanelSnapshot['saveResult'] = null
 	serverName: string | null = null
@@ -108,6 +112,7 @@ export class PanelModel {
 			styles: this.styles,
 			unmountedDirty: this.unmountedDirty,
 			saving: this.saving,
+			picking: this.picking,
 			saveResult: this.saveResult,
 			serverName: this.serverName,
 			serverRoot: this.serverRoot,
@@ -190,6 +195,11 @@ export class PanelModel {
 		} catch {
 			return
 		}
+		if (message.type === 'picked') {
+			this.pickFilter = message.ids.length ? message.ids : null
+			this.notify()
+			return
+		}
 		if (message.type === 'state') {
 			this.serverName = message.server.name
 			this.serverRoot = message.server.root
@@ -197,6 +207,13 @@ export class PanelModel {
 			this.entries = message.entries
 			this.styles = message.styles ?? []
 			this.unmountedDirty = message.unmountedDirty ?? []
+			this.picking = message.picking ?? false
+			// Prune filter ids whose site is no longer mounted.
+			if (this.pickFilter) {
+				const mounted = new Set(this.styles.map((s) => s.id))
+				this.pickFilter = this.pickFilter.filter((id) => mounted.has(id))
+				if (!this.pickFilter.length) this.pickFilter = null
+			}
 			this.notify()
 		} else if (message.type === 'saveResult') {
 			this.saving = false
@@ -233,6 +250,14 @@ export class PanelModel {
 		if (this.saving || this.dirtyCount() === 0) return
 		this.saving = true
 		this.send({ type: 'save' })
+		this.notify()
+	}
+
+	pick(active: boolean) {
+		this.send({ type: 'pick', active })
+	}
+	clearPickFilter() {
+		this.pickFilter = null
 		this.notify()
 	}
 
@@ -305,10 +330,19 @@ export class PanelModel {
 		return this.styleSet(site.id, name.trim().split('.'), text)
 	}
 
-	// Style sites grouped by file for the Styles section.
+	// Style sites grouped by file for the Styles section; a pick filter
+	// narrows the list to the picked ids (in picked order).
 	groupedStyles(): { file: string; sites: PanelStyleEntry[] }[] {
+		const order = this.pickFilter ? new Map(this.pickFilter.map((id, i) => [id, i])) : null
+		const styles = order
+			? order.size
+				? [...this.styles]
+						.filter((s) => order.has(s.id))
+						.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+				: []
+			: this.styles
 		const groups = new Map<string, PanelStyleEntry[]>()
-		for (const site of this.styles) {
+		for (const site of styles) {
 			let list = groups.get(site.file)
 			if (!list) groups.set(site.file, (list = []))
 			list.push(site)

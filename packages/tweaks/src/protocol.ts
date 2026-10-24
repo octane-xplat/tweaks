@@ -1,4 +1,4 @@
-export const TWEAKS_PROTOCOL_VERSION = 2
+export const TWEAKS_PROTOCOL_VERSION = 3
 export const TWEAKS_PATH = '/__octane_tweaks'
 // Connect: ws://host:port/__octane_tweaks?token=<t>&role=app|panel&clientId=<uuid>&label=<web|ios|...>
 // Wrong/missing token → reject the upgrade with 401.
@@ -39,13 +39,17 @@ export interface PanelEntry extends TweakEntry {
 export type AppToServer =
 	| { type: 'mount'; mounts: { id: string; value: TweakValue }[] }
 	| { type: 'unmount'; ids: string[] }
+	// Click-to-pick result: mounted style-site ids under the pointer,
+	// innermost element first; [] = cancelled with Escape.
+	| { type: 'picked'; ids: string[] }
 
-// Full override map; sent on connect + on change.
-export type ServerToApp = {
-	type: 'values'
-	values: Record<string, TweakValue>
-	styles?: ServerToAppStyles
-}
+export type ServerToApp =
+	| {
+			type: 'values'
+			values: Record<string, TweakValue>
+			styles?: ServerToAppStyles
+	  }
+	| { type: 'pick'; active: boolean }
 
 export type PanelToServer =
 	| { type: 'set'; id: string; value: TweakValue }
@@ -53,6 +57,7 @@ export type PanelToServer =
 	| { type: 'styleDelete'; id: string; path: string[] }
 	| { type: 'revert'; ids?: string[] } // omitted = all dirty
 	| { type: 'save' }
+	| { type: 'pick'; active: boolean }
 
 export interface UnmountedDirtyEntry {
 	id: string
@@ -108,6 +113,8 @@ export type ServerToPanel =
 			unmountedDirty: UnmountedDirtyEntry[]
 			// Mounted style sites only (bamboo + inline).
 			styles: PanelStyleEntry[]
+			// A click-to-pick is in progress on connected apps.
+			picking: boolean
 	  }
 	| {
 			type: 'saveResult'
@@ -115,3 +122,4 @@ export type ServerToPanel =
 			saved: string[]
 			errors: { id?: string; file: string; message: string }[]
 	  }
+	| { type: 'picked'; clientId: string; ids: string[] }

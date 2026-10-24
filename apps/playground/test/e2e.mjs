@@ -273,6 +273,47 @@ async function main() {
 		}, 'bamboo revert restores original classes + computed style')
 		console.log('· bamboo revert restores original classes')
 
+		// 4b. Click-to-pick: overlay tags the inline site; picks swallow clicks;
+		// Escape cancels; non-site clicks keep picking.
+		const cardButtonSite = 'src/App.style.ts#css:button'
+		const pickedMsgs = []
+		panel.on('message', (d) => {
+			const m = JSON.parse(String(d))
+			if (m.type === 'picked') { pickedMsgs.push(m) }
+		})
+		panel.send(JSON.stringify({ type: 'pick', active: true }))
+		await waitFor(async () => (await page.locator('html').evaluate((el) => el.style.cursor)) === 'crosshair' ? true : null, 'pick cursor')
+		const titleBox = await page.locator('[data-testid="card.title"]').boundingBox()
+		await page.mouse.move(titleBox.x + titleBox.width / 2, titleBox.y + titleBox.height / 2)
+		const overlay = page.locator('#octane-tweaks-pick-overlay')
+		await overlay.waitFor({ state: 'visible', timeout: 5000 })
+		// Click the counter button: the click is swallowed (count stays 0) AND
+		// the pick reports its bamboo site id (counter.increment uses css:button).
+		await page.locator('[data-testid="counter.increment"]').click()
+		assert.equal(await page.locator('[data-testid="counter.value"]').innerText(), '0')
+		await waitFor(() => pickedMsgs.length === 1 ? true : null, 'picked message')
+		assert.ok(pickedMsgs[0].ids.includes(cardButtonSite), JSON.stringify(pickedMsgs[0].ids))
+		await waitFor(async () => (await page.locator('html').evaluate((el) => el.style.cursor)) !== 'crosshair' ? true : null, 'cursor restored')
+		console.log('· pick swallows clicks; bamboo site returns its id')
+
+		// Pick again, click the inline site: picked carries its id.
+		panel.send(JSON.stringify({ type: 'pick', active: true }))
+		await waitFor(async () => (await page.locator('html').evaluate((el) => el.style.cursor)) === 'crosshair' ? true : null, 'pick cursor 1b')
+		await page.locator('[data-testid="card.title"]').click()
+		await waitFor(() => pickedMsgs.length === 2 ? true : null, 'picked inline site')
+		assert.ok(pickedMsgs[1].ids.includes(titleSite), JSON.stringify(pickedMsgs[1].ids))
+		console.log('· pick delivers the inline site id')
+
+		// Escape cancels with picked [].
+		panel.send(JSON.stringify({ type: 'pick', active: true }))
+		await waitFor(async () => (await page.locator('html').evaluate((el) => el.style.cursor)) === 'crosshair' ? true : null, 'pick cursor 2')
+		await page.mouse.move(titleBox.x + titleBox.width / 2, titleBox.y + titleBox.height / 2)
+		await page.keyboard.press('Escape')
+		await waitFor(() => pickedMsgs.length === 3 ? true : null, 'picked cancel')
+		assert.deepEqual(pickedMsgs[2].ids, [])
+		assert.equal(await overlay.count(), 0)
+		console.log('· Escape cancels the pick')
+
 		// 5. Save: counter to 3, save writes the literal, state survives.
 		await page.locator('[data-testid="counter.increment"]').click()
 		await page.locator('[data-testid="counter.increment"]').click()

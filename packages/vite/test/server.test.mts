@@ -315,3 +315,77 @@ test('styleSet/styleDelete drafts, validation, mounted styles in state, revert',
 	assert.equal(valuesMsgs.at(-1).styles[siteId], undefined)
 	app.close(); panel.close(); await close()
 })
+
+test('pick broadcast, picked relay, disconnect + reconnect handling', async (t) => {
+	const { url, close } = await start(t, {
+		'src/App.tsx': `export function App() {
+	return <View style={{ padding: 16 }} />
+}`,
+	})
+	const siteId = 'src/App.tsx#style:App/View:1'
+	const app = new WebSocket(`${url}?token=${TOKEN}&role=app&clientId=a1&label=web`)
+	const appMsgs: any[] = []
+	app.on('message', (d) => appMsgs.push(JSON.parse(String(d))))
+	await new Promise((r) => app.once('open', r))
+	app.send(JSON.stringify({ type: 'mount', mounts: [{ id: siteId, value: 0 }] }))
+	const panel = new WebSocket(`${url}?token=${TOKEN}&role=panel&clientId=p1&label=panel`)
+	const states: any[] = []
+	const pickedMsgs: any[] = []
+	panel.on('message', (d) => {
+		const m = JSON.parse(String(d))
+		if (m.type === 'state') states.push(m)
+		if (m.type === 'picked') pickedMsgs.push(m)
+	})
+	await new Promise((r) => panel.once('open', r))
+	const until = (fn: () => boolean, label: string) =>
+		new Promise<void>((resolve, reject) => {
+			const end = Date.now() + 4000
+			const poll = () =>
+				fn() ? resolve() : Date.now() > end ? reject(new Error(`timeout ${label}`)) : setTimeout(poll, 10)
+			poll()
+		})
+	await until(() => states.at(-1)?.styles.length === 1, 'mount state')
+
+	// pick active → state.picking + apps get pick active.
+	panel.send(JSON.stringify({ type: 'pick', active: true }))
+	await until(() => states.at(-1)?.picking === true, 'picking true')
+	await until(() => appMsgs.some((m) => m.type === 'pick' && m.active === true), 'app pick on')
+
+	// picked ignored when not picking.
+	panel.send(JSON.stringify({ type: 'pick', active: false }))
+	await until(() => states.at(-1)?.picking === false, 'picking false')
+	app.send(JSON.stringify({ type: 'picked', ids: [siteId] }))
+	await new Promise((r) => setTimeout(r, 60))
+	assert.equal(pickedMsgs.length, 0)
+
+	// picking again, picked relays ids filtered to mounted sites.
+	panel.send(JSON.stringify({ type: 'pick', active: true }))
+	await until(() => states.at(-1)?.picking === true, 'picking again')
+	app.send(JSON.stringify({ type: 'picked', ids: [siteId, 'bogus#style:X/Y:9'] }))
+	await until(() => pickedMsgs.length === 1, 'picked relayed')
+	assert.deepEqual(pickedMsgs[0].ids, [siteId])
+	assert.equal(pickedMsgs[0].clientId, 'a1')
+	await until(() => states.at(-1)?.picking === false, 'pick ended')
+	await until(() => appMsgs.filter((m) => m.type === 'pick' && m.active === false).length >= 1, 'app pick off')
+
+	// New app while picking receives pick after connect-time values.
+	panel.send(JSON.stringify({ type: 'pick', active: true }))
+	await until(() => states.at(-1)?.picking === true, 'picking before reconnect')
+	const app2 = new WebSocket(`${url}?token=${TOKEN}&role=app&clientId=a2&label=web`)
+	const app2Msgs: any[] = []
+	app2.on('message', (d) => app2Msgs.push(JSON.parse(String(d))))
+	await new Promise((r) => app2.once('open', r))
+	await until(
+		() => app2Msgs.findIndex((m) => m.type === 'values') !== -1 &&
+			app2Msgs.findIndex((m) => m.type === 'pick' && m.active === true) >
+				app2Msgs.findIndex((m) => m.type === 'values'),
+		'app2 pick after values',
+	)
+
+	// Last panel disconnect ends the pick.
+	panel.close()
+	await until(() => appMsgs.filter((m) => m.type === 'pick' && m.active === false).length >= 2, 'pick ends on panel disconnect')
+	app.close()
+	app2.close()
+	close()
+})

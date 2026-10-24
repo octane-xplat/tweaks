@@ -47,6 +47,18 @@ renderer; bamboo preview is **web-only** (native leaf is inert — bamboo sites
 don't mount there). When `@bamboocss/node` can't compile a draft the site
 shows `Preview unavailable` — Save still works.
 
+## Click to pick (web)
+
+The panel's `Pick` button toggles pick mode (`pick {active}` → apps; web only —
+native/AppKit ignore it). While picking, the web app shows a crosshair cursor +
+an outline over the nearest tagged ancestor of the pointer: bamboo sites via
+their `tw_<hash>` marker class, inline sites via a `--tw-site` custom property
+the tagged `useTweakStyles` adds. Clicking reports the mounted site ids
+(`picked`) and the panel filters its Styles section; `[]` (Escape) cancels.
+Picks swallow the click so app handlers don't fire. Limitation: an inline site
+is pickable only when its component forwards the `style` object to a DOM
+element.
+
 ## iOS verification status
 
 Verified on the iPhone simulator: the app client dials `globalThis.__NS_HTTP_ORIGIN__`
