@@ -58,21 +58,14 @@ if (!appDir) {
 	fs.mkdirSync(appDir, { recursive: true })
 	run('pnpm', ['dlx', `create-octane-xplat@${TEMPLATE_VERSION}`, appDir, '--targets=ios', '--no-install'], tempDir)
 	run('pnpm', ['install'], appDir)
-	// Pack the workspace tweaks packages and install the tarballs as a
-	// consumer would. tweaks-vite depends on @octane-xplat/tweaks@x.y.z —
-	// resolve it to the packed file through a pnpm override.
+	// Pack the tweaks package and install the tarball as a consumer would —
+	// the fixture's plugin import is the ./vite subpath of the same tarball
+	// (prepack emits dist/vite).
 	const packDir = path.join(tempDir, 'pack')
 	fs.mkdirSync(packDir, { recursive: true })
 	run('pnpm', ['--filter', '@octane-xplat/tweaks', 'pack', '--pack-destination', packDir], REPO)
-	run('pnpm', ['--filter', '@octane-xplat/tweaks-vite', 'pack', '--pack-destination', packDir], REPO)
 	const tweaksTgz = fs.readdirSync(packDir).find((f) => f.startsWith('octane-xplat-tweaks-0'))
-	const viteTgz = fs.readdirSync(packDir).find((f) => f.startsWith('octane-xplat-tweaks-vite-0'))
 	run('pnpm', ['add', path.join(packDir, tweaksTgz)], appDir)
-	const wsFile = path.join(appDir, 'pnpm-workspace.yaml')
-	let ws = fs.readFileSync(wsFile, 'utf8')
-	ws = ws.replace('overrides:', `overrides:\n  "@octane-xplat/tweaks": "file:${path.join(packDir, tweaksTgz)}"`)
-	fs.writeFileSync(wsFile, ws)
-	run('pnpm', ['add', '-D', path.join(packDir, viteTgz)], appDir)
 }
 for (const f of fs.readdirSync(FIXTURE)) {
 	if (f.startsWith('vite.config')) { continue }

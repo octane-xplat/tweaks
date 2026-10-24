@@ -3,7 +3,7 @@
 // parent object), and delete a property with its comma/line. All positions are
 // UTF-16 offsets. After splicing the caller re-parses and re-extracts; a
 // mismatch aborts the save (see save.ts transaction).
-import type { StyleDraft, StyleValue } from '@octane-xplat/tweaks/protocol'
+import type { StyleDraft, StyleValue } from '../protocol.ts'
 import { serializeLiteral } from './serialize.ts'
 import { extractStyles, type StyleSite } from './styles.ts'
 import type { EstreeNode } from './extract.ts'

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import { octane } from '@octanejs/vite-plugin'
-import { tweaks } from '@octane-xplat/tweaks-vite'
+import { tweaks } from '@octane-xplat/tweaks/vite'
 import { xplatBamboo } from '@octane-xplat/bamboo/vite'
 import { xplatCss, xplatBoundary, xplatDevBridge, xplatNodeEnvDefine } from '@octane-xplat/cli/vite'
 

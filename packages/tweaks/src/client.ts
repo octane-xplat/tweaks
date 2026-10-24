@@ -2,7 +2,7 @@ import type { AppToServer, ServerToApp, ServerToAppStyles, StyleValue, TweakValu
 import { clientLabel, createSocket, socketUrl, type TweaksSocket } from './connection'
 
 // __OCTANE_TWEAKS__ is declared in globals.d.ts and injected by
-// @octane-xplat/tweaks-vite in dev only. Absent in production and whenever the
+// @octane-xplat/tweaks/vite in dev only. Absent in production and whenever the
 // plugin is not installed — the client then stays inert and useTweak returns
 // its literal argument.
 

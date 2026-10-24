@@ -9,7 +9,7 @@ import type {
 	UnmountedDirtyEntry,
 } from '@octane-xplat/tweaks/protocol'
 
-// Mirrors TWEAKS_PATH — see packages/vite/src/server.ts for why it is not
+// Mirrors TWEAKS_PATH — see packages/tweaks/src/vite/server.ts for why it is not
 // imported at runtime across host boundaries.
 export const TWEAKS_PATH = '/__octane_tweaks'
 export const CLIENT_LABEL = 'desktop'

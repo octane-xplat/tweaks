@@ -11,7 +11,8 @@
 		"emitDeclarationOnly": true,
 		"outDir": "types",
 		"rootDir": "src",
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"allowImportingTsExtensions": true
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],
 	"exclude": ["src/**/*.test.*"]

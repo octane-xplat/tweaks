@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import { xplatNative } from '@octane-xplat/cli/vite'
-import { tweaks } from '@octane-xplat/tweaks-vite'
+import { tweaks } from '@octane-xplat/tweaks/vite'
 
 // tweaks() must transform BEFORE the Octane compiler; `extra.plugins` merges
 // after, so it is prepended to the resolved preset instead.

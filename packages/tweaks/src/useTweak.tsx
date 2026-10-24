@@ -13,7 +13,7 @@ type Widen<T> = T extends string ? string : T extends number ? number : T extend
  * does the dev override path engage.
  */
 export function useTweak<T extends TweakValue>(value: T, options?: TweakOptions): Widen<T>
-/** @internal Injected by @octane-xplat/tweaks-vite; never pass by hand. */
+/** @internal Injected by @octane-xplat/tweaks/vite; never pass by hand. */
 export function useTweak<T extends TweakValue>(
 	value: T,
 	options: TweakOptions | undefined,

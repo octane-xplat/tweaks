@@ -15,7 +15,7 @@ import type {
 	TweakEntry,
 	UnmountedDirtyEntry,
 	TweakValue,
-} from '@octane-xplat/tweaks/protocol'
+} from '../protocol.ts'
 
 // Mirrors TWEAKS_PATH in @octane-xplat/tweaks/src/protocol.ts. Duplicated
 // because that module ships .ts source, which Node refuses to type-strip from

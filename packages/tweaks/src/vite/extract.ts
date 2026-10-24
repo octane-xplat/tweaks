@@ -1,5 +1,5 @@
 import { parseSync } from '@tsrx/oxc/parser'
-import type { TweakInput, TweakValue } from '@octane-xplat/tweaks/protocol'
+import type { TweakInput, TweakValue } from '../protocol.ts'
 
 // @tsrx/oxc is the toolchain's own parser: it handles .ts/.tsx/.tsrx alike and
 // reports UTF-16 code-unit offsets, which is what string slicing and

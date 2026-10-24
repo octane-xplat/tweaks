@@ -1,7 +1,7 @@
 // Style-site extraction (bamboo css() + inline JSX style={}) and the
 // property-level writeback used by Save. All offsets are UTF-16 code units,
 // like tweak extraction.
-import type { StyleDraft, StyleEntry, StyleProperty, StyleValue } from '@octane-xplat/tweaks/protocol'
+import type { StyleDraft, StyleEntry, StyleProperty, StyleValue } from '../protocol.ts'
 import { parseSource, type EstreeNode, literalOf } from './extract.ts'
 
 export interface StyleSite {

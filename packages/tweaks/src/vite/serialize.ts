@@ -1,4 +1,4 @@
-import type { TweakValue } from '@octane-xplat/tweaks/protocol'
+import type { TweakValue } from '../protocol.ts'
 
 /**
  * Serialize a tweak value as a source literal. Strings preserve the original

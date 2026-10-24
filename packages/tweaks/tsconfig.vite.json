@@ -4,17 +4,11 @@
 		"target": "ESNext",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
-		"lib": [
-			"ESNext"
-		],
-		"types": [
-			"node"
-		],
+		"lib": ["ESNext"],
+		"types": ["node"],
 		"noEmit": true,
 		"skipLibCheck": true,
 		"allowImportingTsExtensions": true
 	},
-	"include": [
-		"src/**/*"
-	]
+	"include": ["src/vite/**/*", "src/protocol.ts"]
 }

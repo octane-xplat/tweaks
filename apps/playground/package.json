@@ -35,9 +35,9 @@
 		"vite": "catalog:xplat",
 		"vitest": "catalog:xplat",
 		"@bamboocss/dev": "1.56.2",
-		"@octane-xplat/tweaks-vite": "workspace:*",
 		"playwright": "1.63.0",
-		"ws": "8.18.3"
+		"ws": "8.18.3",
+		"@octane-xplat/tweaks": "workspace:*"
 	},
 	"packageManager": "pnpm@11.24.0",
 	"engines": {

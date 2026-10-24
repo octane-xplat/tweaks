@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import type { StyleDraft, TweakEntry, TweakValue } from '@octane-xplat/tweaks/protocol'
+import type { StyleDraft, TweakEntry, TweakValue } from '../protocol.ts'
 import { extract, type ExtractedTweak } from './extract.ts'
 import { serializeLiteral } from './serialize.ts'
 import { extractStyles, type StyleSite } from './styles.ts'

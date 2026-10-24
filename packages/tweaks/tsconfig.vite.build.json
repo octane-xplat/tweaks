@@ -4,12 +4,8 @@
 		"target": "ES2022",
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
-		"lib": [
-			"ESNext"
-		],
-		"types": [
-			"node"
-		],
+		"lib": ["ESNext"],
+		"types": ["node"],
 		"declaration": true,
 		"outDir": "dist",
 		"rootDir": "src",
@@ -17,7 +13,5 @@
 		"allowImportingTsExtensions": true,
 		"rewriteRelativeImportExtensions": true
 	},
-	"include": [
-		"src/**/*"
-	]
+	"include": ["src/vite/**/*", "src/protocol.ts"]
 }

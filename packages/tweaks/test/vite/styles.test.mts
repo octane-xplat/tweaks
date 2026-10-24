@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { extractStyles } from '../src/styles.ts'
-import { applySplices, planStyleEdit } from '../src/stylewrite.ts'
-import { saveOverrides } from '../src/save.ts'
+import { extractStyles } from '../../src/vite/styles.ts'
+import { applySplices, planStyleEdit } from '../../src/vite/stylewrite.ts'
+import { saveOverrides } from '../../src/vite/save.ts'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -128,7 +128,7 @@ test('save: style draft writes source; mismatch aborts whole save', async () => 
 })
 
 test('bamboo compile parity: unedited object → static class string', async () => {
-	const { compileBambooObject, draftObject } = await import('../src/bamboo.ts')
+	const { compileBambooObject, draftObject } = await import('../../src/vite/bamboo.ts')
 	const { sites } = extractStyles(BAMBOO, 'App.style.ts')
 	const bad = await compileBambooObject('/nonexistent-root', { properties: [], draft: { set: {}, delete: [] } })
 	assert.equal(bad, null)
@@ -143,7 +143,7 @@ test('bamboo compile parity: unedited object → static class string', async () 
 test('bamboo parity: unedited object compiles to the static class string', async () => {
 	const root = path.resolve('apps/playground')
 	if (!fs.existsSync(path.join(root, 'src/App.style.ts'))) return
-	const { compileBambooObject } = await import('../src/bamboo.ts')
+	const { compileBambooObject } = await import('../../src/vite/bamboo.ts')
 	const code = fs.readFileSync(path.join(root, 'src/App.style.ts'), 'utf8')
 	const { sites } = extractStyles(code, 'src/App.style.ts')
 	const card = sites.find((s) => s.entry.id === 'src/App.style.ts#css:card')

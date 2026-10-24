@@ -3,9 +3,9 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { test } from 'node:test'
-import { extract, type ExtractedTweak } from '../src/extract.ts'
-import { saveOverrides } from '../src/save.ts'
-import type { TweakEntry, TweakValue } from '@octane-xplat/tweaks/protocol'
+import { extract, type ExtractedTweak } from '../../src/vite/extract.ts'
+import { saveOverrides } from '../../src/vite/save.ts'
+import type { TweakEntry, TweakValue } from '../../src/protocol.ts'
 
 function dir(t: { after(fn: () => void): void }) {
 	const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tweaks-save-'))

@@ -172,9 +172,6 @@ importers:
       '@octane-xplat/cli':
         specifier: catalog:xplat
         version: 0.17.1(cac@6.7.14)(oxlint-tsgolint@7.0.2002)
-      '@octane-xplat/tweaks-vite':
-        specifier: workspace:*
-        version: link:../../packages/vite
       '@octanejs/vite-plugin':
         specifier: catalog:xplat
         version: 0.1.61(octane@0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1)))(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1))
@@ -204,19 +201,7 @@ importers:
         version: 8.18.3
 
   packages/tweaks:
-    devDependencies:
-      octane:
-        specifier: 0.14.0
-        version: 0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1))
-      typescript:
-        specifier: 5.9.3
-        version: 5.9.3
-
-  packages/vite:
     dependencies:
-      '@octane-xplat/tweaks':
-        specifier: workspace:*
-        version: link:../tweaks
       '@tsrx/oxc':
         specifier: 0.20.0
         version: 0.20.0
@@ -230,6 +215,9 @@ importers:
       '@types/ws':
         specifier: 8.18.1
         version: 8.18.1
+      octane:
+        specifier: 0.14.0
+        version: 0.14.0(patch_hash=8955f99c4989c4759eea5dba7e44dfa76af47f1ea60f1c9aba83e628e269ea41)(@tsrx/oxc@0.20.0)(typescript@5.9.3)(vite@8.3.0(@types/node@26.6.5)(yaml@2.9.1))
       typescript:
         specifier: 5.9.3
         version: 5.9.3

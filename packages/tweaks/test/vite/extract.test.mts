@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { extract } from '../src/extract.ts'
-import { serializeLiteral } from '../src/serialize.ts'
+import { extract } from '../../src/vite/extract.ts'
+import { serializeLiteral } from '../../src/vite/serialize.ts'
 
 const FILE = 'src/App.tsrx'
 

@@ -18,6 +18,7 @@
 	"files": [
 		"types",
 		"src",
+		"dist",
 		"!src/**/*.test.*",
 		"!src/**/*.spec.*"
 	],
@@ -38,6 +39,10 @@
 			"web": "./src/dev.web.ts",
 			"native": "./src/dev.ts",
 			"default": "./src/dev.ts"
+		},
+		"./vite": {
+			"types": "./dist/vite/index.d.ts",
+			"default": "./dist/vite/index.js"
 		}
 	},
 	"publishConfig": {
@@ -45,14 +50,23 @@
 	},
 	"scripts": {
 		"typegen": "tsc -p tsconfig.types.json",
-		"prepack": "pnpm typegen",
-		"typecheck": "tsc --noEmit -p tsconfig.json"
+		"prepack": "pnpm typegen && pnpm build",
+		"typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.vite.json",
+		"build": "pnpm typegen && tsc -p tsconfig.vite.build.json"
 	},
 	"devDependencies": {
 		"octane": "0.14.0",
-		"typescript": "5.9.3"
+		"typescript": "5.9.3",
+		"@types/ws": "8.18.1",
+		"vite": "8.3.0"
 	},
 	"peerDependencies": {
-		"octane": ">=0.14.0 <1"
+		"octane": ">=0.14.0 <1",
+		"vite": ">=5"
+	},
+	"dependencies": {
+		"magic-string": "0.30.21",
+		"ws": "8.18.3",
+		"@tsrx/oxc": "0.20.0"
 	}
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { tweaks } from '../src/index.ts'
+import { tweaks } from '../../src/vite/index.ts'
 
 const FILE = '/proj/src/App.tsx'
 const REL = 'src/App.tsx'
