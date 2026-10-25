@@ -240,6 +240,64 @@ test('save notifies listeners and flips saving', () => {
 	assert.ok(transports[0].sent.some((m) => JSON.parse(m).type === 'save'))
 })
 
+test('save preview: request sends savePreview, response shows diff, confirm/cancel', () => {
+	const { model, transports } = setup()
+	const t = transports[0]
+	t.emit(stateMsg([entry({ dirty: true, override: 5 })]))
+	model.requestPreview()
+	assert.equal(model.previewing, true)
+	assert.equal(model.preview, null)
+	assert.deepEqual(JSON.parse(t.sent.at(-1)), { type: 'savePreview' })
+
+	const previewMsg = {
+		type: 'savePreview',
+		files: [{ file: 'f', diff: '@@ -1,1 +1,1 @@\n-old\n+new' }],
+		truncated: false,
+		errors: [],
+	}
+	t.emit(previewMsg)
+	assert.equal(model.previewing, false)
+	assert.equal(model.preview?.files[0].file, 'f')
+	assert.equal(model.previewStale, false)
+
+	// Cancel discards the preview without sending save.
+	model.cancelPreview()
+	assert.equal(model.preview, null)
+	assert.deepEqual(JSON.parse(t.sent.at(-1)).type, 'savePreview')
+
+	// Confirm runs the normal save.
+	model.requestPreview()
+	t.emit(previewMsg)
+	model.confirmSave()
+	assert.equal(model.preview, null)
+	assert.deepEqual(JSON.parse(t.sent.at(-1)), { type: 'save' })
+	assert.equal(model.saving, true)
+})
+
+test('a state change while the preview is open marks it stale; confirm refused', () => {
+	const { model, transports } = setup()
+	const t = transports[0]
+	const dirtyEntry = entry({ dirty: true, override: 5 })
+	t.emit(stateMsg([dirtyEntry]))
+	model.requestPreview()
+	t.emit({ type: 'savePreview', files: [{ file: 'f', diff: 'd' }], truncated: false, errors: [] })
+	assert.equal(model.previewStale, false)
+
+	// Another panel (or an app remount) changed the drafts.
+	t.emit(stateMsg([entry({ dirty: true, override: 9 })]))
+	assert.equal(model.previewStale, true)
+	model.confirmSave()
+	assert.notEqual(JSON.parse(t.sent.at(-1)).type, 'save')
+	assert.ok(model.preview, 'stale preview stays open until refreshed or cancelled')
+
+	// Refresh recomputes against the new drafts and clears stale.
+	model.requestPreview()
+	t.emit({ type: 'savePreview', files: [{ file: 'f', diff: 'd2' }], truncated: false, errors: [] })
+	assert.equal(model.previewStale, false)
+	model.confirmSave()
+	assert.deepEqual(JSON.parse(t.sent.at(-1)), { type: 'save' })
+})
+
 test('pick filter narrows groupedStyles and is pruned/cleared', () => {
 	const { model } = setup()
 	const s1 = { ...STYLE_SITE, id: 'f1#a' }

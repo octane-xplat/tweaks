@@ -20,20 +20,13 @@ export interface SaveResult {
 	writes: Map<string, string>
 }
 
-interface Edit {
+export interface Edit {
 	start: number
 	end: number
 	text: string
 }
 
-/**
- * Re-parse every touched file from disk (writeback ranges are true source
- * offsets — earlier transforms may have rewritten the served module), find each
- * dirty entry by id, and splice the serialized override over its value literal.
- * On any write failure, already-written files are restored from their original
- * content so a failed Save never leaves a half-applied set.
- */
-export async function saveOverrides(opts: {
+export interface PlanOptions {
 	root: string
 	manifest: Map<string, { entry: TweakEntry; tweak: ExtractedTweak }>
 	styleManifest?: Map<string, StyleSite>
@@ -41,7 +34,31 @@ export async function saveOverrides(opts: {
 	overrides: Map<string, TweakValue>
 	isDirty(id: string): boolean
 	isStyleDirty?(id: string): boolean
-}): Promise<SaveResult> {
+}
+
+export interface PlannedFileWrite {
+	file: string
+	/** Content read from disk — also the base the edits splice into. */
+	before: string
+	/** What Save would write. */
+	after: string
+	/** Splices against `before`, sorted ascending by start. */
+	edits: Edit[]
+}
+
+export interface SavePlan {
+	writes: PlannedFileWrite[]
+	errors: SaveError[]
+}
+
+/**
+ * Re-parse every touched file from disk (writeback ranges are true source
+ * offsets — earlier transforms may have rewritten the served module), find each
+ * dirty entry by id, and compute the serialized-override splices over its value
+ * literal — without writing anything. `saveOverrides` applies this plan to
+ * disk; `previewSave` diffs it for the panel's Save preview.
+ */
+export async function planSave(opts: PlanOptions): Promise<SavePlan> {
 	const errors: SaveError[] = []
 	const editsByFile = new Map<string, Edit[]>()
 	const fileContents = new Map<string, string>()
@@ -166,23 +183,37 @@ export async function saveOverrides(opts: {
 	}
 
 	// Apply edits per file in descending offset order.
-	const contents = new Map<string, string>()
+	const writes: PlannedFileWrite[] = []
 	for (const [file, edits] of editsByFile) {
 		let code = fileContents.get(file)!
 		edits.sort((a, b) => b.start - a.start)
 		for (const edit of edits) {
 			code = code.slice(0, edit.start) + edit.text + code.slice(edit.end)
 		}
-		contents.set(file, code)
+		writes.push({
+			file,
+			before: fileContents.get(file)!,
+			after: code,
+			edits: edits.slice().sort((a, b) => a.start - b.start),
+		})
 	}
+	return { writes, errors }
+}
 
+/**
+ * Apply a `planSave` plan to disk. On any write failure, already-written files
+ * are restored from their original content so a failed Save never leaves a
+ * half-applied set.
+ */
+export async function saveOverrides(opts: PlanOptions): Promise<SaveResult> {
+	const { writes, errors } = await planSave(opts)
 	const saved: string[] = []
 	const written = new Map<string, string>()
 	try {
-		for (const [file, code] of contents) {
+		for (const { file, after } of writes) {
 			const abs = path.join(opts.root, file)
 			written.set(file, await fs.readFile(abs, 'utf8'))
-			await fs.writeFile(abs, code)
+			await fs.writeFile(abs, after)
 			saved.push(file)
 		}
 	} catch (error) {
@@ -198,5 +229,10 @@ export async function saveOverrides(opts: {
 		return { ok: false, saved: [], errors, writes: new Map() }
 	}
 
-	return { ok: errors.length === 0, saved, errors, writes: contents }
+	return {
+		ok: errors.length === 0,
+		saved,
+		errors,
+		writes: new Map(writes.map((w) => [w.file, w.after])),
+	}
 }

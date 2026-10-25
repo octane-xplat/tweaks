@@ -1,4 +1,4 @@
-export const TWEAKS_PROTOCOL_VERSION = 3
+export const TWEAKS_PROTOCOL_VERSION = 4
 export const TWEAKS_PATH = '/__octane_tweaks'
 // Connect: ws://host:port/__octane_tweaks?token=<t>&role=app|panel&clientId=<uuid>&label=<web|ios|...>
 // Wrong/missing token → reject the upgrade with 401.
@@ -57,6 +57,9 @@ export type PanelToServer =
 	| { type: 'styleDelete'; id: string; path: string[] }
 	| { type: 'revert'; ids?: string[] } // omitted = all dirty
 	| { type: 'save' }
+	// Ask the server to compute what `save` would write right now — same plan,
+	// nothing written. Answered with a `savePreview` message.
+	| { type: 'savePreview' }
 	| { type: 'pick'; active: boolean }
 
 export interface UnmountedDirtyEntry {
@@ -120,6 +123,15 @@ export type ServerToPanel =
 			type: 'saveResult'
 			ok: boolean
 			saved: string[]
+			errors: { id?: string; file: string; message: string }[]
+	  }
+	| {
+			type: 'savePreview'
+			// Per file that would change: a unified-diff body (@@ hunks with
+			// ' '/'-'/'+' lines) computed from the same plan Save applies.
+			files: { file: string; diff: string }[]
+			// Diff payload was capped; Save still applies every change.
+			truncated: boolean
 			errors: { id?: string; file: string; message: string }[]
 	  }
 	| { type: 'picked'; clientId: string; ids: string[] }

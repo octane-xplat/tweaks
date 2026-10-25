@@ -227,6 +227,67 @@ function StyleSiteCard(props: { site: PanelStyleEntry }) @{
 	);
 }
 
+function diffLineStyle(line: string) {
+	if (line.startsWith('@@')) return { color: '#8a8a8a' };
+	if (line.startsWith('+')) return { color: '#2e9e4f' };
+	if (line.startsWith('-')) return { color: '#d64545' };
+	return {};
+}
+
+function SavePreviewView() @{
+	useStore(modelTick);
+	const snap = model.snapshot();
+	const preview = snap.preview!;
+	return (
+		<VStack testID="save.preview" style={{ gap: 4 }}>
+			<HStack style={{ gap: 8, alignItems: 'center' }}>
+				<Text style={{ fontWeight: 'bold' }}>Save preview</Text>
+				{preview.truncated ? (
+					<Text>Diff truncated — Save still applies all changes.</Text>
+				) : null}
+			</HStack>
+			{preview.errors.length ? (
+				<Text testID="preview.errors">
+					{preview.errors.map((e) => `${e.file}: ${e.message}`).join('; ')}
+				</Text>
+			) : null}
+			{snap.previewStale ? (
+				<Text testID="preview.stale">Drafts changed — refresh the preview before saving.</Text>
+			) : null}
+			<ScrollableArea style={{ height: 400 }}>
+				<VStack>
+					{preview.files.length === 0 ? (
+						<Text testID="preview.empty">No file changes.</Text>
+					) : (
+						preview.files.map((f) => (
+							<VStack key={f.file} testID={`preview-file-${f.file}`} style={{ paddingBottom: 8 }}>
+								<Text style={{ fontWeight: 'bold' }}>{f.file}</Text>
+								{f.diff.split('\n').map((line, i) => (
+									<Text key={i} style={diffLineStyle(line)}>
+										{line.length ? line : ' '}
+									</Text>
+								))}
+							</VStack>
+						))
+					)}
+				</VStack>
+			</ScrollableArea>
+			<HStack style={{ gap: 8, alignItems: 'center' }}>
+				<Button
+					testID="save.confirm"
+					label="Confirm save"
+					isDisabled={snap.previewStale || snap.saving}
+					clickAction={() => model.confirmSave()}
+				/>
+				{snap.previewStale ? (
+					<Button testID="preview.refresh" label="Refresh" clickAction={() => model.requestPreview()} />
+				) : null}
+				<Button testID="save.cancel" label="Cancel" clickAction={() => model.cancelPreview()} />
+			</HStack>
+		</VStack>
+	);
+}
+
 export function App() @{
 	useStore(modelTick);
 	const servers = useStore(servers$);
@@ -285,66 +346,72 @@ export function App() @{
 					</HStack>
 				) : null}
 			</HStack>
-			<ScrollableArea style={{ height: 460 }}>
-				{snap.status === 'connected' && snap.entries.length === 0 ? (
-					<Text testID="entries.empty">No tweaks on screen. Open a screen that calls useTweak.</Text>
-				) : (
-					<VStack style={{ flexDirection: 'column' }}>
-						{groups.map((g) => (
-							<VStack key={g.group} style={{ gap: 4, paddingTop: 8 }}>
-								<Text style={{ fontWeight: 'bold' }}>{g.group}</Text>
-								{g.entries.map((e) => (
-									<Row key={e.id} entry={e} />
-								))}
-							</VStack>
-						))}
-						{styleGroups.length ? (
-							<VStack testID="styles.section" style={{ gap: 4, paddingTop: 8 }}>
-								{model.pickFilter ? (
-									<HStack style={{ gap: 8, alignItems: 'center' }}>
-										<Text testID="pick.filter">{`Showing ${model.pickFilter.length} picked sites`}</Text>
-										<Button testID="pick.clear" label="Show all" clickAction={() => model.clearPickFilter()} />
-									</HStack>
-								) : null}
-								<Text style={{ fontWeight: 'bold' }}>Styles</Text>
-								{styleGroups.map((g) => (
-									<VStack key={g.file} style={{ gap: 4, paddingLeft: 4 }}>
-										<Text style={{ fontWeight: 'bold' }}>{g.file}</Text>
-										{g.sites.map((site) => (
-											<StyleSiteCard key={site.id} site={site} />
+			{snap.preview ? (
+				<SavePreviewView />
+			) : (
+				<>
+					<ScrollableArea style={{ height: 460 }}>
+						{snap.status === 'connected' && snap.entries.length === 0 ? (
+							<Text testID="entries.empty">No tweaks on screen. Open a screen that calls useTweak.</Text>
+						) : (
+							<VStack style={{ flexDirection: 'column' }}>
+								{groups.map((g) => (
+									<VStack key={g.group} style={{ gap: 4, paddingTop: 8 }}>
+										<Text style={{ fontWeight: 'bold' }}>{g.group}</Text>
+										{g.entries.map((e) => (
+											<Row key={e.id} entry={e} />
 										))}
 									</VStack>
 								))}
+								{styleGroups.length ? (
+									<VStack testID="styles.section" style={{ gap: 4, paddingTop: 8 }}>
+										{model.pickFilter ? (
+											<HStack style={{ gap: 8, alignItems: 'center' }}>
+												<Text testID="pick.filter">{`Showing ${model.pickFilter.length} picked sites`}</Text>
+												<Button testID="pick.clear" label="Show all" clickAction={() => model.clearPickFilter()} />
+											</HStack>
+										) : null}
+										<Text style={{ fontWeight: 'bold' }}>Styles</Text>
+										{styleGroups.map((g) => (
+											<VStack key={g.file} style={{ gap: 4, paddingLeft: 4 }}>
+												<Text style={{ fontWeight: 'bold' }}>{g.file}</Text>
+												{g.sites.map((site) => (
+													<StyleSiteCard key={site.id} site={site} />
+												))}
+											</VStack>
+										))}
+									</VStack>
+								) : null}
 							</VStack>
+						)}
+					</ScrollableArea>
+					<HStack style={{ gap: 8, alignItems: 'center' }}>
+						<Text testID="dirty-count">
+							{dirty} unsaved{unmounted ? ` (${unmounted} not on screen)` : ''}
+						</Text>
+						<Button testID="revert-all" label="Revert all" clickAction={() => model.revertAll()} />
+						<Button
+							testID="pick"
+							label={snap.picking ? 'Cancel pick' : 'Pick'}
+							isDisabled={!snap.clients.some((c) => c.label === 'web')}
+							clickAction={() => model.pick(!snap.picking)}
+						/>
+						<Button
+							testID="save"
+							label={snap.previewing ? 'Previewing…' : 'Save…'}
+							isDisabled={dirty === 0 || snap.saving || snap.previewing}
+							clickAction={() => model.requestPreview()}
+						/>
+						{snap.saveResult ? (
+							<Text testID="save-result">
+								{snap.saveResult.ok
+									? `Saved ${snap.saveResult.saved.length} file(s)`
+									: snap.saveResult.errors.map((x) => `${x.file}: ${x.message}`).join('; ')}
+							</Text>
 						) : null}
-					</VStack>
-				)}
-			</ScrollableArea>
-			<HStack style={{ gap: 8, alignItems: 'center' }}>
-				<Text testID="dirty-count">
-					{dirty} unsaved{unmounted ? ` (${unmounted} not on screen)` : ''}
-				</Text>
-				<Button testID="revert-all" label="Revert all" clickAction={() => model.revertAll()} />
-				<Button
-					testID="pick"
-					label={snap.picking ? 'Cancel pick' : 'Pick'}
-					isDisabled={!snap.clients.some((c) => c.label === 'web')}
-					clickAction={() => model.pick(!snap.picking)}
-				/>
-				<Button
-					testID="save"
-					label="Save"
-					isDisabled={dirty === 0 || snap.saving}
-					clickAction={() => model.save()}
-				/>
-				{snap.saveResult ? (
-					<Text testID="save-result">
-						{snap.saveResult.ok
-							? `Saved ${snap.saveResult.saved.length} file(s)`
-							: snap.saveResult.errors.map((x) => `${x.file}: ${x.message}`).join('; ')}
-					</Text>
-				) : null}
-			</HStack>
+					</HStack>
+				</>
+			)}
 		</VStack>
 	);
 }

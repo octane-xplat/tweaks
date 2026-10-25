@@ -315,6 +315,20 @@ async function main() {
 		assert.equal(await overlay.count(), 0)
 		console.log('· Escape cancels the pick')
 
+		// 4d. Save preview: same plan Save would apply — per-file unified diff,
+		// nothing written to disk.
+		panel.send(JSON.stringify({ type: 'savePreview' }))
+		const preview = await next('savePreview')
+		assert.deepEqual(preview.errors, [], JSON.stringify(preview.errors))
+		assert.equal(preview.truncated, false)
+		const appDiff = preview.files.find((f) => f.file === 'src/App.tsrx')
+		assert.ok(appDiff, 'preview has a diff for src/App.tsrx')
+		assert.match(appDiff.diff, /^-.*useTweak\(8,/m, 'diff removes the old radius literal')
+		assert.match(appDiff.diff, /^\+.*useTweak\(30,/m, 'diff adds the new radius literal')
+		assert.match(appDiff.diff, /^\+.*marginTop: 9/m, 'diff covers the inline style draft')
+		assert.equal(fs.readFileSync(APP_FILE, 'utf8'), originalSource, 'preview wrote nothing')
+		console.log('· savePreview returns the planned diff without writing')
+
 		// 5. Save: counter to 3, save writes the literal, state survives.
 		await page.locator('[data-testid="counter.increment"]').click()
 		await page.locator('[data-testid="counter.increment"]').click()

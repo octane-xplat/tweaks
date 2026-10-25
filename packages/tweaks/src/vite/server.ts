@@ -28,6 +28,12 @@ export interface SaveReport {
 	errors: { id?: string; file: string; message: string }[]
 }
 
+export interface SavePreviewReport {
+	files: { file: string; diff: string }[]
+	truncated: boolean
+	errors: { id?: string; file: string; message: string }[]
+}
+
 export interface ServerDeps {
 	token: string
 	root: string
@@ -36,6 +42,7 @@ export interface ServerDeps {
 	getStyleEntry(id: string): StyleEntry | undefined
 	compileStyle?(id: string, draft: StyleDraft): Promise<{ className: string; css: string } | null>
 	save(): Promise<SaveReport>
+	savePreview?(): Promise<SavePreviewReport>
 	log(message: string): void
 }
 
@@ -262,6 +269,19 @@ export class TweaksServer {
 			}
 			void this.asyncBroadcastValues()
 			this.broadcastState()
+		} else if (message.type === 'savePreview') {
+			if (!this.deps.savePreview) return
+			if (this.saving) {
+				this.sendTo(socket, {
+					type: 'savePreview',
+					files: [],
+					truncated: false,
+					errors: [{ file: '', message: 'busy: a save is already in progress' }],
+				})
+				return
+			}
+			const report = await this.deps.savePreview()
+			this.sendTo(socket, { type: 'savePreview', ...report })
 		} else if (message.type === 'save') {
 			if (this.saving) {
 				this.sendTo(socket, {

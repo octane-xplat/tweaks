@@ -7,7 +7,8 @@ import { extract, type ExtractedTweak } from './extract.ts'
 import { extractStyles, type StyleSite } from './styles.ts'
 import { compileBambooObject } from './bamboo.ts'
 import { contentHash, newToken, removeRegistry, sweepRegistry, writeRegistry } from './registry.ts'
-import { saveOverrides } from './save.ts'
+import { saveOverrides, type PlanOptions } from './save.ts'
+import { previewSave } from './preview.ts'
 import { TweaksServer } from './server.ts'
 
 // Mirrors TWEAKS_PATH — see server.ts for why it is not imported at runtime.
@@ -105,27 +106,35 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 		writtenFiles.delete(file)
 	}
 
-	async function save() {
-		const result = await saveOverrides({
+	function isStyleDirty(id: string): boolean {
+		const d = hub?.styleDrafts.get(id)
+		if (!d) return false
+		const source = new Map(
+			(styleManifest.get(id)?.entry.properties ?? []).map((p) => [p.path.join('.'), p.value]),
+		)
+		for (const [k, v] of Object.entries(d.set)) {
+			if (!source.has(k) || source.get(k) !== v) return true
+		}
+		for (const k of d.delete) if (source.has(k)) return true
+		return false
+	}
+
+	// Snapshot of the current plan inputs — shared by Save and its preview so
+	// the diff is computed from exactly what Save would write.
+	function planOptions(): PlanOptions {
+		return {
 			root,
 			manifest,
 			styleManifest,
 			overrides: hub?.overrides ?? new Map(),
 			styleDrafts: hub?.styleDrafts ?? new Map(),
 			isDirty,
-			isStyleDirty: (id) => {
-				const d = hub?.styleDrafts.get(id)
-				if (!d) return false
-				const source = new Map(
-					(styleManifest.get(id)?.entry.properties ?? []).map((p) => [p.path.join('.'), p.value]),
-				)
-				for (const [k, v] of Object.entries(d.set)) {
-					if (!source.has(k) || source.get(k) !== v) return true
-				}
-				for (const k of d.delete) if (source.has(k)) return true
-				return false
-			},
-		})
+			isStyleDirty,
+		}
+	}
+
+	async function save() {
+		const result = await saveOverrides(planOptions())
 		// Record what we wrote so the resulting file-change event does not HMR
 		// (the running module still holds the old literal; a reload would lose
 		// app state and revert the visible value).
@@ -187,6 +196,7 @@ export function tweaks(options: TweaksPluginOptions = {}): Plugin {
 					return await compileBambooObject(root, { properties: site.entry.properties, draft })
 				},
 				save,
+				savePreview: () => previewSave(planOptions()),
 				log: (m) => server.config.logger.info(m),
 			})
 			server.httpServer?.on('upgrade', hub.handleUpgrade)

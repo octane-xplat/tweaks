@@ -47,6 +47,12 @@ export type TransportFactory = (url: string) => Transport | null
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected'
 
+export interface SavePreview {
+	files: { file: string; diff: string }[]
+	truncated: boolean
+	errors: { id?: string; file: string; message: string }[]
+}
+
 export interface PanelSnapshot {
 	status: ConnectionStatus
 	clients: { clientId: string; label: string }[]
@@ -55,6 +61,11 @@ export interface PanelSnapshot {
 	unmountedDirty: UnmountedDirtyEntry[]
 	saving: boolean
 	saveResult: { ok: boolean; saved: string[]; errors: { id?: string; file: string; message: string }[] } | null
+	preview: SavePreview | null
+	previewing: boolean
+	// Drafts changed on the server after the preview was computed — Confirm is
+	// disabled until a fresh preview is requested.
+	previewStale: boolean
 	serverName: string | null
 	serverRoot: string | null
 	picking: boolean
@@ -82,6 +93,10 @@ export class PanelModel {
 	pickFilter: string[] | null = null
 	saving = false
 	saveResult: PanelSnapshot['saveResult'] = null
+	preview: SavePreview | null = null
+	previewing = false
+	previewStale = false
+	private previewFingerprint = ''
 	serverName: string | null = null
 	serverRoot: string | null = null
 	// The identity we connected to — survives a `server` rename.
@@ -114,6 +129,9 @@ export class PanelModel {
 			saving: this.saving,
 			picking: this.picking,
 			saveResult: this.saveResult,
+			preview: this.preview,
+			previewing: this.previewing,
+			previewStale: this.previewStale,
 			serverName: this.serverName,
 			serverRoot: this.serverRoot,
 		}
@@ -214,10 +232,27 @@ export class PanelModel {
 				this.pickFilter = this.pickFilter.filter((id) => mounted.has(id))
 				if (!this.pickFilter.length) this.pickFilter = null
 			}
+			if (this.preview && this.dirtyFingerprint() !== this.previewFingerprint) {
+				this.previewStale = true
+			}
 			this.notify()
 		} else if (message.type === 'saveResult') {
 			this.saving = false
 			this.saveResult = { ok: message.ok, saved: message.saved, errors: message.errors }
+			this.notify()
+		} else if (message.type === 'savePreview') {
+			this.previewing = false
+			// A late response racing a Confirm must not reopen the view.
+			if (this.saving) {
+				this.notify()
+				return
+			}
+			this.preview = {
+				files: message.files ?? [],
+				truncated: message.truncated ?? false,
+				errors: message.errors ?? [],
+			}
+			this.previewStale = this.dirtyFingerprint() !== this.previewFingerprint
 			this.notify()
 		}
 	}
@@ -251,6 +286,41 @@ export class PanelModel {
 		this.saving = true
 		this.send({ type: 'save' })
 		this.notify()
+	}
+
+	// Default Save flow: ask the server for the planned diff. `save()` stays
+	// the one-shot path for callers that skip the preview.
+	requestPreview() {
+		if (this.previewing || this.saving || this.dirtyCount() === 0) return
+		this.previewing = true
+		this.previewStale = false
+		this.previewFingerprint = this.dirtyFingerprint()
+		this.send({ type: 'savePreview' })
+		this.notify()
+	}
+
+	cancelPreview() {
+		this.preview = null
+		this.previewStale = false
+		this.notify()
+	}
+
+	// Confirm the previewed plan: run the existing save. Refuses a stale
+	// preview — drafts changed since it was computed.
+	confirmSave() {
+		if (!this.preview || this.previewStale || this.saving) return
+		this.preview = null
+		this.save()
+	}
+
+	// What the preview was computed against: every override/draft the panel
+	// knows about. Compared on later state messages to flag a stale preview.
+	private dirtyFingerprint(): string {
+		return JSON.stringify({
+			overrides: this.entries.map((e) => [e.id, e.override]),
+			styles: this.styles.map((s) => [s.id, s.draft]),
+			unmounted: this.unmountedDirty.map((u) => [u.id, u.override]),
+		})
 	}
 
 	pick(active: boolean) {

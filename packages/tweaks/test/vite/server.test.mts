@@ -55,6 +55,11 @@ async function start(
 			saves.push(report as never)
 			return report
 		},
+		savePreview: async () => ({
+			files: [{ file: 'src/a.tsx', diff: '@@ -1,1 +1,1 @@\n-const a = useTweak(8)\n+const a = useTweak(20)' }],
+			truncated: false,
+			errors: [],
+		}),
 		log: () => {},
 	})
 	const httpServer = http.createServer()
@@ -217,6 +222,37 @@ test('concurrent save reports busy; save resolves with result', async (t) => {
 	assert.deepEqual(first.saved, ['src/a.tsx'])
 	assert.equal(second.ok, false)
 	assert.match(second.errors[0].message, /busy/)
+})
+
+test('savePreview request returns the per-file diff report; busy during save', async (t) => {
+	const h = await start(t, FILES, 150)
+	const panel1 = connect(h, 'panel', 'p1')
+	const panel2 = connect(h, 'panel', 'p2')
+	await open(panel1.ws)
+	await open(panel2.ws)
+	await panel1.next('state')
+	await panel2.next('state')
+
+	const preview = panel1.next('savePreview')
+	panel1.ws.send(JSON.stringify({ type: 'savePreview' }))
+	const report = (await preview) as {
+		files: { file: string; diff: string }[]
+		truncated: boolean
+		errors: { message: string }[]
+	}
+	assert.equal(report.files.length, 1)
+	assert.equal(report.files[0].file, 'src/a.tsx')
+	assert.match(report.files[0].diff, /^\+const a = useTweak\(20\)$/m)
+	assert.equal(report.truncated, false)
+
+	// While a save is in flight a preview answers busy instead of racing it.
+	const saving = panel1.next('saveResult')
+	panel1.ws.send(JSON.stringify({ type: 'save' }))
+	await new Promise((r) => setTimeout(r, 60)) // < saveDelay: the save is still running
+	const busy = panel2.next('savePreview')
+	panel2.ws.send(JSON.stringify({ type: 'savePreview' }))
+	await saving
+	assert.match((await busy).errors[0].message, /busy/)
 })
 
 test('unmountedDirty lists dirty overrides with no mounting client; bare revert covers them', async (t) => {

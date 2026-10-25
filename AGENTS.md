@@ -61,4 +61,8 @@ MutationObserver leaf) and are written back on Save through `planStyleEdit`.
 Bamboo preview compiles drafts through `loadConfigAndCreateContext` in-memory
 (optional `@bamboocss/node`, degrades to `preview:'unavailable'`); the native
 `__twCss` leaf is a pass-through — bamboo sites mount on web only. Protocol v3 adds `pick`/`picked` for web
-click-to-pick (`state.picking`; panel filter via `pickFilter`).
+click-to-pick (`state.picking`; panel filter via `pickFilter`). Protocol v4
+adds `savePreview`: the server runs the same `planSave` the real Save uses and
+returns a capped per-file unified diff (`src/vite/diff.ts` renders hunks from
+the plan's splices). The panel's Save button opens the diff (Confirm → `save`,
+Cancel returns); a `state` change while the preview is open marks it stale.

@@ -214,11 +214,23 @@ try {
 	fakeApp.close()
 	console.log('· pick filters the styles section; Show all restores')
 
-	// Save: click Save in the panel; source updated; footer clears; app counter intact.
+	// Save: Save… opens a diff preview; Cancel returns; Confirm writes the
+	// source, clears dirty, and app state survives.
 	await app.locator('[data-testid="counter.increment"]').click()
 	await app.locator('[data-testid="counter.increment"]').click()
 	await app.locator('[data-testid="counter.increment"]').click()
 	await tid(panel, 'save').click()
+	await waitFor(async () => (await tid(panel, 'save.preview').count()) === 1, 'preview opens')
+	await waitFor(async () => {
+		const t = await tid(panel, 'preview-file-src/App.tsrx').innerText().catch(() => '')
+		return t.includes('@@') && t.includes('hidden tweak') && t.includes('expandable detail') ? true : null
+	}, 'preview shows the App.tsrx diff')
+	await tid(panel, 'save.cancel').click()
+	await waitFor(async () => (await tid(panel, 'save.preview').count()) === 0, 'cancel closes preview')
+	await waitFor(async () => (await tid(panel, 'save').isEnabled()), 'save re-enabled')
+	await tid(panel, 'save').click()
+	await waitFor(async () => (await tid(panel, 'save.confirm').count()) === 1, 'preview reopens')
+	await tid(panel, 'save.confirm').click()
 	await waitFor(async () => {
 		const t = await tid(panel, 'save-result').innerText().catch(() => '')
 		return /Saved \d+ file/.test(t) ? true : null

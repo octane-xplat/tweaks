@@ -1,3 +1,4 @@
+/// <reference path="./globals.d.ts" />
 import type { AppToServer, ServerToApp, ServerToAppStyles, StyleValue, TweakValue } from './protocol'
 import { clientLabel, createSocket, socketUrl, type TweaksSocket } from './connection'
 

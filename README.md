@@ -65,6 +65,8 @@ checkout instead of the published release, see [links/README.md](links/README.md
 
 The desktop panel app lives in `apps/desktop` (see its README). It discovers running dev servers from `~/.octane-xplat/tweaks/servers/`, edits entries live, and writes source back only on Save.
 
+Pressing **Save…** first shows a diff preview: for every file that would change, a unified diff computed from the same write plan Save applies — reverts and unmounted components' dirty values included. Confirm performs the write; Cancel returns without touching source.
+
 ## Styles (dev preview)
 
 Static CSS in `css({…})` object literals (Bamboo `styled-system/css`) and JSX
