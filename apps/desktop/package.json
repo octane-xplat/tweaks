@@ -38,8 +38,8 @@
 			"macos": {
 				"runtime": "appkit-node-api",
 				"dev": {
-					"viteConfig": "vite.macos.config.mjs",
-					"bundleFile": "dist/main.cjs",
+					"viteConfig": "vite.dev.config.mjs",
+					"bundleFile": "dist/dev/main.cjs",
 					"productName": "Octane Tweaks"
 				},
 				"package": {

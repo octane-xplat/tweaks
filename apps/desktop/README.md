@@ -76,10 +76,12 @@ pnpm --filter @octane-xplat/tweaks-desktop build        # packaged .app + dmg â†
 - **Published `macos-renderer@0.17.1` ships no `libxplatmason.dylib`.** Its
   loader (`src/mason.ts`) only checks `XPLAT_MASON_LIB` and monorepo cwd paths,
   so packaged consumers get `masonview lays out nothing`. `pnpm dev` passes
-  `XPLAT_MASON_LIB` at `links/octane-xplat/packages/macos-renderer/native/
-  xplatmason/libxplatmason.dylib` when the checkout is linked (see
-  `dev-macos.mjs`). **Packaged .app currently lays out empty** until the
-  renderer ships the dylib.
+  `XPLAT_MASON_LIB` at `links/octane-xplat/packages/macos-renderer/platforms/
+  macos/prebuilt/libxplatmason.dylib` when the checkout is linked (see
+  `dev-macos.mjs`); under `dev:octane` the checkout's renderer declares the
+  dylib via `xplat.macos.prebuiltLibraries` and the CLI bootstrap dlopens it,
+  so the env var is unused there. **Packaged .app under published packages
+  lays out empty** until the renderer ships the dylib.
 - **No color picker in `@octane-xplat/ui`** â€” hex TextInput + swatch only.
 
 ## Verified / limits
