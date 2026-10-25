@@ -18,6 +18,39 @@ export function Card() {
 }
 ```
 
+## Add it to your app
+
+```sh
+pnpm add -D @octane-xplat/tweaks
+```
+
+In your Vite config, put `tweaks()` before the Octane plugins:
+
+```ts
+import { tweaks } from '@octane-xplat/tweaks/vite'
+
+export default defineConfig({
+	plugins: [tweaks(), octane(), /* … */],
+})
+```
+
+On **web** that's all — run your dev server, open the panel, tweak values, and
+press Save when you're happy.
+
+On **iOS/Android** three extra steps apply:
+
+1. `import '@valor/nativescript-websockets'` once (already a template
+   dependency) so `globalThis.WebSocket` exists.
+2. Prepend `tweaks()` to the resolved `xplatNative` plugin list — see
+   `fixtures/ios-app/vite.config.native.mts` for the exact wiring.
+3. Until a framework release ships octane-xplat/octane-xplat@37d238d, run with
+   `NS_VENDOR_EXCLUDE=@octane-xplat/ui` — the vendor bundle can't resolve ui's
+   source imports.
+
+Production builds replace each `useTweak` call with its literal and drop the
+metadata, so nothing ships. Skipping the plugin is also safe — the hook just
+returns the default.
+
 ## Try it
 
 ```sh
