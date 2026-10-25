@@ -95,13 +95,19 @@ release ships them.
   Fixed: octane-xplat/octane-xplat@89befaa, octane-xplat/octane-xplat@39d0be0.
 - `NSURLSessionWebSocketTask` bridged metadata missing in the JSC host
   (hand-rolled WS over `NWConnection`). Fixed: the host now provides
-  `globalThis.WebSocket`, octane-xplat/octane-xplat@124e0ac.
+  `globalThis.WebSocket`, octane-xplat/octane-xplat@124e0ac; follow-up
+  octane-xplat/octane-xplat@9dfb15f fixes the re-entrant
+  `g_pointerCache` finalization crash exposed by the change.
 - `xplat dev macos` assumes isolated `app/node_modules` while the template
   uses `nodeLinker: hoisted` (`link-host-deps.mjs` postinstall).
   Fixed: octane-xplat/octane-xplat@55ebbd6, octane-xplat/octane-xplat@cbc24a0.
 - `Section` defaults to row direction on AppKit (use explicit `VStack`) and
   `Badge` with raw string children throws on AppKit (wrap in `<Text>`).
   Fixed: octane-xplat/octane-xplat@d50e8e7.
+- Bamboo padding utilities are not overridden by a framework `.vx-view`
+  padding rule. Chromium has no such rule; in the playground fixture,
+  `card.box`'s own inline `style={{ padding }}` (`useTweak(16)`) wins the
+  cascade.
 - Published `create-octane-xplat@0.17.1` template fails `xplat dev` on iOS: the
   esbuild vendor bundle cannot resolve `@octane-xplat/ui`'s extensionless src/
   imports (160 errors, e.g. `Could not resolve "./useResizable"`), and

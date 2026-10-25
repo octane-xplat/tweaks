@@ -244,8 +244,9 @@ async function main() {
 			const e = latest?.styles.find((x) => x.id === cardSite)
 			return e && e.preview === 'live' ? true : null
 		}, 'bamboo site mounted with live preview')
-		// padding loses to the element's own inline style (style={{ padding }}),
-		// which correctly outranks the utility; assert on backgroundColor.
+		// The fixture's own inline style={{ padding }} on card.box correctly
+		// outranks Bamboo padding; there is no framework .vx-view padding rule.
+		// Assert on backgroundColor instead.
 		const baseBg = await page.locator('[data-testid="card.box"]').evaluate((el) => globalThis.getComputedStyle(el).backgroundColor)
 		panel.send(JSON.stringify({ type: 'styleSet', id: cardSite, path: ['backgroundColor'], value: 'primary' }))
 		await waitFor(async () => {
