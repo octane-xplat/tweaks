@@ -80,28 +80,45 @@ see findings.
 
 ## Framework findings (gaps hit while building this)
 
-- `vite:define` doesn't reach the dev client (worked around by transform injection).
-- Bamboo's extractor can't parse `.tsrx` — static styles must live in `.ts` files.
-- `@octane-xplat/macos-renderer` doesn't package `libxplatmason.dylib` (dev works via `XPLAT_MASON_LIB`; packaged apps lay out empty).
-- `NSURLSessionWebSocketTask` bridged metadata missing in the JSC host (hand-rolled WS over `NWConnection`).
-- `xplat dev macos` assumes isolated `app/node_modules` while the template uses `nodeLinker: hoisted` (`link-host-deps.mjs` postinstall).
-- `Section` defaults to row direction on AppKit (use explicit `VStack`).
-- `Badge` with raw string children throws `cannot contain text-only children` on AppKit (wrap in `<Text>`).
-- `vx-view` default padding (16px) outranks Bamboo utility layers on web — `p_*`/`padding` utilities don't apply to vx-view elements.
+Gaps hit while building this. Most are fixed upstream on `main` — marked with
+the landing commit (octane-xplat/octane-xplat@SHA); workarounds stay until a
+release ships them.
+
+- `vite:define` doesn't reach the dev client (worked around by transform
+  injection). Not a bug — dev-mode define delivery is upstream-defined
+  behavior, recorded at octane-xplat/octane-xplat@933dc3739. Workaround stays.
+- Bamboo's extractor can't parse `.tsrx` — static styles must live in `.ts`
+  files. Upstream `@bamboocss` supports `.tsrx` in newer releases; the
+  monorepo's pins are being updated.
+- `@octane-xplat/macos-renderer` doesn't package `libxplatmason.dylib` (dev
+  works via `XPLAT_MASON_LIB`; packaged apps lay out empty).
+  Fixed: octane-xplat/octane-xplat@89befaa, octane-xplat/octane-xplat@39d0be0.
+- `NSURLSessionWebSocketTask` bridged metadata missing in the JSC host
+  (hand-rolled WS over `NWConnection`). Fixed: the host now provides
+  `globalThis.WebSocket`, octane-xplat/octane-xplat@124e0ac.
+- `xplat dev macos` assumes isolated `app/node_modules` while the template
+  uses `nodeLinker: hoisted` (`link-host-deps.mjs` postinstall).
+  Fixed: octane-xplat/octane-xplat@55ebbd6, octane-xplat/octane-xplat@cbc24a0.
+- `Section` defaults to row direction on AppKit (use explicit `VStack`) and
+  `Badge` with raw string children throws on AppKit (wrap in `<Text>`).
+  Fixed: octane-xplat/octane-xplat@d50e8e7.
 - Published `create-octane-xplat@0.17.1` template fails `xplat dev` on iOS: the
   esbuild vendor bundle cannot resolve `@octane-xplat/ui`'s extensionless src/
   imports (160 errors, e.g. `Could not resolve "./useResizable"`), and
   `sourceOnlyDeps()` detection skips ui because its `exports` has a "." key.
   `NS_VENDOR_EXCLUDE=@octane-xplat/ui` (per-module serving) boots cleanly.
+  Fixed: octane-xplat/octane-xplat@37d238d.
 - Workspace-subdir apps in a hoisted pnpm workspace can't boot under `xplat
   dev`: `sourceOnlyDeps()` reads `join(cwd,'node_modules',...)` which doesn't
   exist under `apps/<app>`; per-module serving then reaches
   `__octaneUniversalPlan is not a function` at ui `View.tsrx` (the octane
   transform never covers those modules). Evidence: playground run vs stock
   control, `artifacts/ios/dev-session.log`.
+  Fixed: octane-xplat/octane-xplat@55ebbd6.
 - `xplat dev` does not accept `--device` — pass the device target id
   positionally (`xplat dev <UDID>`); `ns` boots simulators via `open
   <DEVELOPER_DIR>/Applications/Simulator.app` which fails when `xcode-select`
   points at a partial Xcode (no sudo → set `DEVELOPER_DIR` per-process and
   pre-boot with `xcrun simctl boot`); dead sessions leave `target_busy` —
   clear with `xplat session end <id>`.
+  Fixed: octane-xplat/octane-xplat@f5fbd4b, octane-xplat/octane-xplat@c9a3dcc.
