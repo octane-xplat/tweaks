@@ -92,7 +92,7 @@ Picks swallow the click so app handlers don't fire. Limitation: an inline site
 is pickable only when its component forwards the `style` object to a DOM
 element.
 
-## iOS verification status
+## iOS/Android verification status
 
 Verified on the iPhone simulator: the app client dials `globalThis.__NS_HTTP_ORIGIN__`
 (the LAN origin NS publishes for its own HMR socket — also reachable from
@@ -101,9 +101,24 @@ physical devices) with the plugin-injected origin as fallback, mounts the
 in the device log), and restores on `revert`. `styleSet` is verified
 server-side (draft accepted + broadcast to the app); on-device application of
 inline style drafts is not separately asserted — the shared `__tw` merge path
-is proven on web. Android and physical devices unverified.
+is proven on web.
 
-Consumer requirements on iOS: the app must `import '@valor/nativescript-websockets'`
+Verified on the Android emulator (`octane-cozy-fen`, API 35 arm64
+google_apis): the same assertions pass — `tweaks` + inline style sites mount,
+panel `set` produces `[tweaks-render]` in the streamed device log, `styleSet`
+is accepted and broadcast, `revert` restores. One transport difference: on
+Android `__NS_HTTP_ORIGIN__` is the loopback origin
+(`http://127.0.0.1:5173`), not the LAN IP — `xplat dev` sets up
+`adb reverse tcp:5173` so device-side loopback reaches the host Vite server.
+The `fixtures/ios-app` sources apply to both platforms unchanged
+(`main.ts` already handles Android's `Application.started` re-entry path);
+the same `NS_VENDOR_EXCLUDE=@octane-xplat/ui` workaround is required.
+`test/android/run.mjs` boots the first `octane*` AVD
+(`ANDROID_AVD`/`ANDROID_SERIAL` override) and re-execs under a
+`goddard-agent resource run` reservation (`android:<AVD>` exclusive) when not
+already inside one. Physical Android devices unverified.
+
+Consumer requirements on iOS/Android: the app must `import '@valor/nativescript-websockets'`
 (already a template dependency) so `globalThis.WebSocket` exists, prepend
 `tweaks()` to the resolved `xplatNative` plugin list (see
 `fixtures/ios-app/vite.config.native.mts`), and tolerate

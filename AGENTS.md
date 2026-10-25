@@ -36,6 +36,13 @@ pnpm test:ios            # iOS simulator verification: scaffolds the pinned
                          # packs+installs the tweaks packages, applies
                          # fixtures/ios-app, runs xplat dev <UDID> + assertions
                          # (`--app <dir>` reuses a prepared app)
+pnpm test:android        # Android emulator verification: same flow into
+                         # artifacts/android/ with --targets=android, reusing
+                         # fixtures/ios-app; boots the first octane* AVD
+                         # (ANDROID_AVD/ANDROID_SERIAL override), runs
+                         # xplat dev <serial> + assertions. Self-wraps in a
+                         # goddard resource reservation (android:<AVD>)
+                         # unless GODDARD_RESOURCE_RESERVATION is set.
 ```
 
 ## Conventions
