@@ -1,417 +1,962 @@
-import { useState } from 'octane';
+import { useEffect, useRef, useState } from 'octane'
+import type { CSSProperties } from 'octane/jsx-runtime'
 import {
-	Badge,
-	Button,
 	HStack,
+	Icon,
+	NumberInput,
+	Popover,
+	Pressable,
 	ScrollableArea,
 	Selector,
 	Slider,
-	StatusDot,
 	Switch,
 	Text,
 	TextInput,
-	NumberInput,
+	Tooltip,
 	View,
 	VStack,
-} from '@octane-xplat/ui';
-import { createStore, useStore } from '@octane-xplat/ui/data';
-import type { PanelEntry, PanelStyleEntry, TweakValue } from '@octane-xplat/tweaks/protocol';
-import { displayValue, HEX_COLOR_RE, PanelModel, serverKey, serverLabel, type PanelServerInfo } from './model';
-import { transportFactory } from './transport';
-import { pollServers } from './servers';
-import { setKeepOnTop, supportsKeepOnTop } from './window';
+	type TextInputHandle,
+} from '@octane-xplat/ui'
 
-// One module-singleton model per platform entry.
+import { createStore, useStore } from '@octane-xplat/ui/data'
+import type { PanelEntry, PanelStyleEntry } from '@octane-xplat/tweaks/protocol'
+import {
+	displayValue,
+	HEX_COLOR_RE,
+	PanelModel,
+	serverKey,
+	serverLabel,
+	type PanelServerInfo,
+} from './model'
+
+import { transportFactory } from './transport'
+import { pollServers } from './servers'
+import { setKeepOnTop, supportsKeepOnTop } from './window'
+import { usePanelContent } from './use-panel-content'
+import './icons'
+import './styles'
+
 export const model = new PanelModel(transportFactory, {
-	label: typeof location === 'undefined' ? 'desktop' : 'panel-web',
-});
-const servers$ = createStore<PanelServerInfo[]>([]);
-const modelTick = createStore(0);
-const keepOnTop$ = createStore(false);
+	label: supportsKeepOnTop ? 'desktop' : 'panel-web',
+})
 
+const servers$ = createStore<PanelServerInfo[]>([])
+const modelTick = createStore(0)
+const keepOnTop$ = createStore(false)
 pollServers((list) => {
-	const prev = servers$.getSnapshot();
-	servers$.set(list);
-	// Auto-connect: first discovered server; reconnect if ours vanished.
-	const current = prev.find((s) => model.serverName === s.name);
-	if (!current && list.length) model.connect(list[0]);
-});
-model.subscribe(() => modelTick.set(modelTick.getSnapshot() + 1));
+	servers$.set(list)
+	model.syncServers(list)
+})
 
-function Row(props: { entry: PanelEntry }) @{
-	useStore(modelTick);
-	const e = props.entry;
-	const current = displayValue(e);
-	const [text, setText] = useState<string | null>(null);
-	const isColor = e.input.type === 'color';
-	// Local text wins only while it isn't a sendable value (invalid color hex);
-	// otherwise the live server value is shown, so Revert/remote edits appear.
-	const shown = isColor && text !== null && !HEX_COLOR_RE.test(text) ? text : String(current);
-	const colorValid = !isColor || HEX_COLOR_RE.test(shown);
+model.subscribe(() => modelTick.set(modelTick.getSnapshot() + 1))
+
+// Pressable preserves toggle/disclosure accessibility state on both hosts.
+// The shared tooltip supplies AppKit pointer hints as well as web focus hints.
+function Action(props: {
+	id?: string
+	label: string
+	icon?: string
+	iconOnly?: boolean
+	active?: boolean
+	expanded?: boolean
+	disabled?: boolean
+	primary?: boolean
+	className?: string
+	anchor?: { current: any }
+	onPress: () => void
+}) @{
+	return (
+		<Tooltip
+			className={['panel-action', props.iconOnly && 'panel-action--icon', props.className]}
+			content={<Text>{props.label}</Text>}
+			trigger={
+				<Pressable
+					id={props.id}
+					ref={props.anchor}
+					disabled={props.disabled}
+					className={[
+						'panel-button',
+						props.active && 'panel-button--active',
+						props.primary && 'panel-button--primary',
+						props.disabled && 'panel-button--disabled',
+					]}
+					accessibilityLabel={props.label}
+					accessibilityState={{
+						pressed: props.active,
+						expanded: props.expanded,
+						disabled: props.disabled,
+					}}
+					web={{ title: props.label, 'aria-expanded': props.expanded }}
+					onPress={props.onPress}
+				>
+					<HStack className="panel-button-content">
+						{props.icon ? (
+							<Icon
+								name={`panel-${props.icon}`}
+								size={16}
+								color={
+									props.disabled
+										? '#98a2b3'
+										: props.primary
+											? '#ffffff'
+											: props.active
+												? '#2563eb'
+												: '#667085'
+								}
+							/>
+						) : null}
+						{!props.iconOnly ? <Text className="panel-button-label">{props.label}</Text> : null}
+					</HStack>
+				</Pressable>
+			}
+		/>
+	)
+}
+
+function TweakRow(props: { entry: PanelEntry; disabled: boolean }) @{
+	useStore(modelTick)
+	const e = props.entry
+	const current = displayValue(e)
+	const [invalidColor, setInvalidColor] = useState<string | null>(null)
+	const shown = invalidColor ?? String(current)
+	const validColor = e.input.type !== 'color' || HEX_COLOR_RE.test(shown)
+	const fieldClass = [
+		'panel-field',
+		e.dirty && 'panel-field--changed',
+		!validColor && 'panel-field--invalid',
+	]
 
 	return (
-		<VStack testID={`row-${e.id}`} style={{ gap: 4, paddingTop: 4, paddingBottom: 4 }}>
-			<HStack style={{ gap: 8, alignItems: 'center' }}>
-				<Text>{e.name}</Text>
-				{e.dirty ? <Badge><Text>modified</Text></Badge> : null}
-				{e.dirty ? (
-					<Button
-						label="Revert"
-						clickAction={() => {
-							setText(null);
-							model.revert(e.id);
-						}}
-					/>
-				) : null}
-			</HStack>
-			<HStack testID={`control-${e.id}`} style={{ gap: 8, alignItems: 'center' }}>
-				{e.input.type === 'number' && e.input.min !== undefined && e.input.max !== undefined ? (
-					<>
-						<Slider
-							style={{ width: 160, height: 20 }}
+		<VStack id={`row-${e.id}`} className="panel-entry">
+			<HStack className="panel-row">
+				<Text className="panel-property-name" maxLines={1}>
+					{e.name}
+				</Text>
+				<HStack
+					id={`control-${e.id}`}
+					className={[
+						'panel-control',
+						e.input.type === 'boolean' && 'panel-control--boolean',
+						e.dirty && 'panel-control--changed',
+						!validColor && 'panel-control--invalid',
+					]}
+				>
+					{e.input.type === 'number' && e.input.min !== undefined && e.input.max !== undefined ? (
+						<>
+							<Slider
+								className="panel-slider"
+								value={Number(current)}
+								minValue={e.input.min}
+								maxValue={e.input.max}
+								step={e.input.step}
+								disabled={props.disabled}
+								onValueChange={(v: number | [number, number]) => {
+									if (typeof v === 'number') {
+										model.set(e.id, v)
+									}
+								}}
+							/>
+							<NumberInput
+								className={[fieldClass, 'panel-number-exact']}
+								value={Number(current)}
+								min={e.input.min}
+								max={e.input.max}
+								step={e.input.step}
+								isDisabled={props.disabled}
+								label={`${e.name} value`}
+								isLabelHidden
+								onValueChange={(v: number | null) => {
+									if (v !== null) {
+										model.set(e.id, v)
+									}
+								}}
+							/>
+						</>
+					) : e.input.type === 'number' ? (
+						<NumberInput
+							className={fieldClass}
 							value={Number(current)}
-							minValue={e.input.min}
-							maxValue={e.input.max}
-							onValueChange={(v: number) => model.set(e.id, v)}
+							step={e.input.step}
+							isDisabled={props.disabled}
+							label={e.name}
+							isLabelHidden
+							onValueChange={(v: number | null) => {
+								if (v !== null) {
+									model.set(e.id, v)
+								}
+							}}
 						/>
-						<Text testID={`value-${e.id}`}>{String(current)}</Text>
-					</>
-				) : e.input.type === 'number' ? (
-					<NumberInput
-						style={{ width: 100 }}
-						value={Number(current)}
-						onValueChange={(v: number | null) => {
-							if (v !== null && Number.isFinite(v)) model.set(e.id, v);
-						}}
-					/>
-				) : e.input.type === 'boolean' ? (
-					<Switch
-						testID={`control-${e.id}`}
-						checked={Boolean(current)}
-						onCheckedChange={(v: boolean) => model.set(e.id, v)}
-					/>
-				) : e.input.type === 'select' ? (
-					<Selector
-						style={{ width: 120 }}
-						value={String(current)}
-						options={(e.input.options as readonly (string | number)[]).map((o) => ({
-							value: String(o),
-						}))}
-						onValueChange={(v: string | null) => {
-							if (v !== null) model.set(e.id, v);
+					) : e.input.type === 'boolean' ? (
+						<>
+							<Switch
+								value={Boolean(current)}
+								onChange={(v: boolean) => model.set(e.id, v)}
+								isDisabled={props.disabled}
+								accessibilityLabel={e.name}
+							/>
+							<Text className={['panel-value', e.dirty && 'panel-value--changed']}>
+								{String(current)}
+							</Text>
+						</>
+					) : e.input.type === 'select' ? (
+						<Selector
+							className={fieldClass}
+							value={String(current)}
+							options={e.input.options.map((v) => ({ value: String(v) }))}
+							isDisabled={props.disabled}
+							label={e.name}
+							isLabelHidden
+							onValueChange={(v: string | null) => {
+								// Select presents strings, but numeric options stay numbers on the wire.
+								if (e.input.type !== 'select' || v === null) {
+									return
+								}
+
+								const option = e.input.options.find((o) => String(o) === v)
+								if (option !== undefined) {
+									model.set(e.id, option)
+								}
+							}}
+						/>
+					) : (
+						<>
+							{e.input.type === 'color' ? (
+								<View
+									id={`swatch-${e.id}`}
+									className="panel-color-swatch"
+									style={{ backgroundColor: validColor ? shown : 'transparent' }}
+								/>
+							) : null}
+							<TextInput
+								className={fieldClass}
+								value={shown}
+								isDisabled={props.disabled}
+								accessibilityLabel={e.name}
+								onChange={(v: string) => {
+									setInvalidColor(e.input.type === 'color' && !HEX_COLOR_RE.test(v) ? v : null)
+									model.set(e.id, v)
+								}}
+							/>
+						</>
+					)}
+				</HStack>
+				{e.dirty ? (
+					<Action
+						id={`revert-${e.id}`}
+						label={`Revert ${e.name}`}
+						icon="undo-2"
+						iconOnly
+						disabled={props.disabled}
+						onPress={() => {
+							setInvalidColor(null)
+							model.revert(e.id)
 						}}
 					/>
 				) : (
-					<>
-						<TextInput
-							testID={`control-${e.id}`}
-							value={shown}
-							onChange={(v: string) => {
-								setText(v);
-								if (model.set(e.id, v)) setText(null);
-							}}
-						/>
-						{isColor ? (
-							<View
-								testID={`swatch-${e.id}`}
-								style={{
-									width: 16,
-									height: 16,
-									borderRadius: 4,
-									backgroundColor: colorValid ? shown : 'transparent',
-								}}
-							/>
-						) : null}
-						{isColor && !colorValid ? <Text>invalid hex</Text> : null}
-					</>
+					<View className="panel-action-slot" />
 				)}
 			</HStack>
-			{!e.writable ? <Text>Live only — {e.reason ?? 'not a literal'}</Text> : null}
+			{!validColor ? <Text className="panel-error">invalid hex</Text> : null}
+			{!e.writable ? (
+				<Text className="panel-note">Live only — {e.reason ?? 'not a literal'}</Text>
+			) : null}
 		</VStack>
-	);
+	)
 }
 
-function StylePropRow(props: { site: PanelStyleEntry; path: string[] }) @{
-	useStore(modelTick);
-	const site = props.site;
-	const key = props.path.join('.');
-	const prop = site.properties.find((p) => p.path.join('.') === key);
-	const added = !prop; // draft-added path
-	const value = model.stylePropValue(site, props.path);
-	const deleted = model.stylePropDeleted(site, props.path);
-	const editable = (prop?.editable ?? added) && site.writable && !deleted;
-
+function TweakGroup(props: { group: string; entries: PanelEntry[]; disabled: boolean }) @{
+	const [open, setOpen] = useState(true)
+	const dirty = props.entries.filter((e) => e.dirty).length
 	return (
-		<HStack style={{ gap: 8, alignItems: 'center', paddingLeft: 8 }}>
-			<Text testID={`style-path-${site.id}-${key}`}>{deleted ? `~${key}~` : key}</Text>
-			{!prop?.editable && !added ? (
-				<Text>dynamic</Text>
-			) : (
-				<>
-					<TextInput
-						testID={`style-input-${site.id}-${key}`}
-						value={value == null ? '' : String(value)}
-						onChange={(v: string) => model.styleSet(site.id, props.path, v)}
-					/>
-					{deleted ? (
-						<Button
-							testID={`style-undo-${site.id}-${key}`}
-							label="Undo"
-							clickAction={() => model.styleRestore(site.id, props.path)}
-						/>
-					) : editable ? (
-						<Button
-							testID={`style-delete-${site.id}-${key}`}
-							label="Delete"
-							clickAction={() => model.styleDelete(site.id, props.path)}
-						/>
-					) : null}
-				</>
-			)}
-		</HStack>
-	);
-}
-
-function StyleSiteCard(props: { site: PanelStyleEntry }) @{
-	useStore(modelTick);
-	const site = props.site;
-	const [name, setName] = useState('');
-	const [val, setVal] = useState('');
-	const canAdd = model.styleAddNameValid(site, name);
-	const paths = site.properties.map((p) => p.path);
-	for (const k of model.styleAddedPaths(site)) paths.push(k.split('.'));
-
-	return (
-		<VStack testID={`stylesite-${site.id}`} style={{ gap: 4, paddingLeft: 8 }}>
-			<HStack style={{ gap: 8, alignItems: 'center' }}>
-				<Text>{site.label}</Text>
-				<Text>{`${site.file}:${site.line}`}</Text>
-				{site.dirty ? <Badge><Text>modified</Text></Badge> : null}
-				{site.dirty ? (
-					<Button label="Revert" clickAction={() => model.revert(site.id)} />
-				) : null}
+		<VStack className="panel-tweak-group">
+			<HStack className="panel-section-heading">
+				<Action
+					label={props.group}
+					icon={open ? 'chevron-down' : 'chevron-right'}
+					expanded={open}
+					className="panel-disclosure"
+					onPress={() => setOpen(!open)}
+				/>
+				{!open && dirty ? <Text className="panel-note">{`${dirty} modified`}</Text> : null}
 			</HStack>
-			{site.preview === 'unavailable' ? <Text>Preview unavailable</Text> : null}
-			{!site.writable ? <Text>{site.reason ?? 'read-only'}</Text> : null}
-			{paths.map((p) => (
-				<StylePropRow key={p.join('.')} site={site} path={p} />
-			))}
-			{site.writable ? (
-				<HStack style={{ gap: 8, alignItems: 'center', paddingLeft: 8 }}>
-					<TextInput
-						testID={`style-add-name-${site.id}`}
-						value={name}
-						placeholder="property"
-						onChange={(v: string) => setName(v)}
-					/>
-					<TextInput
-						testID={`style-add-value-${site.id}`}
-						value={val}
-						placeholder="value"
-						onChange={(v: string) => setVal(v)}
-					/>
-					<Button
-						testID={`style-add-${site.id}`}
-						label="Add"
-						isDisabled={!canAdd}
-						clickAction={() => {
-							if (model.styleAdd(site, name, val)) {
-								setName('');
-								setVal('');
+			{open
+				? props.entries.map((entry) => (
+						<TweakRow key={entry.id} entry={entry} disabled={props.disabled} />
+					))
+				: null}
+		</VStack>
+	)
+}
+
+// A small set of literal defaults, augmented by names already mounted in the
+// app. Unknown/custom names remain available; no Panda token schema is assumed.
+const PROPERTY_DEFAULTS: Record<string, string> = {
+	alignItems: 'center',
+	backgroundColor: 'transparent',
+	borderColor: '#000000',
+	borderRadius: '0',
+	borderWidth: '0',
+	color: '#000000',
+	display: 'flex',
+	flexDirection: 'column',
+	flexGrow: '1',
+	flexShrink: '1',
+	fontSize: '16px',
+	fontWeight: '400',
+	gap: '0',
+	height: 'auto',
+	justifyContent: 'center',
+	lineHeight: '20px',
+	margin: '0',
+	marginBottom: '0',
+	marginLeft: '0',
+	marginRight: '0',
+	marginTop: '0',
+	maxWidth: 'none',
+	minHeight: '0',
+	opacity: '1',
+	overflow: 'hidden',
+	padding: '0',
+	paddingBottom: '0',
+	paddingLeft: '0',
+	paddingRight: '0',
+	paddingTop: '0',
+	width: 'auto',
+}
+
+function AddProperty(props: {
+	site: PanelStyleEntry
+	disabled: boolean
+	onAdded: (path: string) => void
+}) @{
+	const anchor = useRef<any>(null)
+	const finalFocus = useRef<any>(null)
+	const [open, setOpen] = useState(false)
+	return (
+		<>
+			<Action
+				id={`style-add-${props.site.id}`}
+				label="Add property"
+				icon="plus"
+				anchor={anchor}
+				disabled={props.disabled}
+				expanded={open}
+				onPress={() => {
+					finalFocus.current = anchor.current
+					setOpen(!open)
+				}}
+			/>
+			{open ? (
+				<Popover
+					anchor={anchor}
+					open
+					placement="bottom"
+					onDismiss={() => setOpen(false)}
+					finalFocusRef={finalFocus}
+					className="panel-property-popover"
+				>
+					<PropertyChooser
+						site={props.site}
+						disabled={props.disabled}
+						onChoose={(name, value) => {
+							if (model.styleAdd(props.site, name, value)) {
+								// Successful selection hands focus to the new row rather
+								// than restoring the add button when the picker closes.
+								finalFocus.current = { focus: () => props.onAdded(name) }
+								props.onAdded(name)
+								setOpen(false)
 							}
 						}}
 					/>
-				</HStack>
+				</Popover>
 			) : null}
-		</VStack>
-	);
+		</>
+	)
 }
 
-function diffLineStyle(line: string) {
-	if (line.startsWith('@@')) return { color: '#8a8a8a' };
-	if (line.startsWith('+')) return { color: '#2e9e4f' };
-	if (line.startsWith('-')) return { color: '#d64545' };
-	return {};
-}
+function PropertyChooser(props: {
+	site: PanelStyleEntry
+	disabled: boolean
+	onChoose: (name: string, value: string) => void
+}) @{
+	const input = useRef<TextInputHandle | null>(null)
+	const [query, setQuery] = useState('')
+	const [active, setActive] = useState(0)
+	const [custom, setCustom] = useState<string | null>(null)
+	const [customValue, setCustomValue] = useState('')
+	useEffect(() => {
+		const timer = setTimeout(() => input.current?.focus(), 0)
+		return () => clearTimeout(timer)
+	}, [])
 
-function SavePreviewView() @{
-	useStore(modelTick);
-	const snap = model.snapshot();
-	const preview = snap.preview!;
+	const defaults = { ...PROPERTY_DEFAULTS }
+	for (const site of model.styles) {
+		for (const prop of site.properties) {
+			if (prop.value !== null && model.styleAddNameValid(props.site, prop.path.join('.'))) {
+				defaults[prop.path.join('.')] ??= String(prop.value)
+			}
+		}
+	}
+
+	const existing = new Set([
+		...props.site.properties.map((p) => p.path.join('.')),
+		...model.styleAddedPaths(props.site),
+	])
+
+	const names = Object.keys(defaults)
+		.filter((n) => !existing.has(n) && n.toLowerCase().includes(query.trim().toLowerCase()))
+		.sort()
+
+	const typed = query.trim()
+	const canCreate =
+		typed &&
+		!existing.has(typed) &&
+		model.styleAddNameValid(props.site, typed) &&
+		!names.includes(typed)
+
+	const options = [...names, ...(canCreate ? [typed] : [])]
+	const choose = (name: string) => {
+		if (props.disabled) {
+			return
+		}
+
+		if (Object.hasOwn(defaults, name)) {
+			props.onChoose(name, defaults[name])
+		} else {
+			setCustom(name)
+			setCustomValue('')
+		}
+	}
+
 	return (
-		<VStack testID="save.preview" style={{ gap: 4 }}>
-			<HStack style={{ gap: 8, alignItems: 'center' }}>
-				<Text style={{ fontWeight: 'bold' }}>Save preview</Text>
-				{preview.truncated ? (
-					<Text>Diff truncated — Save still applies all changes.</Text>
+		<VStack className="panel-property-menu">
+			<TextInput
+				ref={input}
+				id={`style-add-search-${props.site.id}`}
+				className="panel-field"
+				value={query}
+				placeholder="Filter properties…"
+				accessibilityLabel="Find a property to add"
+				isDisabled={props.disabled}
+				onChange={(v: string) => {
+					setQuery(v)
+					setActive(0)
+					setCustom(null)
+				}}
+				onSubmit={() => {
+					if (options[active]) {
+						choose(options[active])
+					}
+				}}
+				web={{
+					role: 'combobox',
+					'aria-expanded': true,
+					'aria-controls': 'property-options',
+					'aria-activedescendant': options[active] ? `property-option-${active}` : undefined,
+					onkeydown: (event: KeyboardEvent) => {
+						if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+							event.preventDefault()
+							setActive(
+								Math.max(
+									0,
+									Math.min(options.length - 1, active + (event.key === 'ArrowDown' ? 1 : -1)),
+								),
+							)
+						}
+					},
+				}}
+			/>
+			{custom ? (
+				<VStack className="panel-custom-property">
+					<Text className="panel-code">{custom}</Text>
+					<TextInput
+						id={`style-add-value-${props.site.id}`}
+						className="panel-field"
+						accessibilityLabel={`Value for ${custom}`}
+						placeholder="Value"
+						value={customValue}
+						isDisabled={props.disabled}
+						onChange={setCustomValue}
+						onSubmit={() => {
+							if (customValue.trim()) {
+								props.onChoose(custom, customValue)
+							}
+						}}
+					/>
+					<Action
+						label={`Add ${custom}`}
+						icon="plus"
+						disabled={props.disabled || !customValue.trim()}
+						onPress={() => props.onChoose(custom, customValue)}
+					/>
+				</VStack>
+			) : (
+				<ScrollableArea className="panel-property-options">
+					<VStack id="property-options" web={{ role: 'listbox' }}>
+						{options.length === 0 ? (
+							<Text className="panel-note">
+								{existing.has(typed) ? 'Property already exists.' : 'No matching properties.'}
+							</Text>
+						) : (
+							options.map((name, i) => (
+								<Pressable
+									key={name}
+									id={`property-option-${i}`}
+									className={[
+										'panel-property-option',
+										i === active && 'panel-property-option--active',
+									]}
+									disabled={props.disabled}
+									web={{ role: 'option' }}
+									accessibilityLabel={Object.hasOwn(defaults, name) ? name : `Add ${name}…`}
+									accessibilityState={{ selected: i === active }}
+									onPress={() => choose(name)}
+								>
+									<HStack className="panel-option-content">
+										<Text className="panel-code">{name}</Text>
+										<Text className="panel-note">
+											{Object.hasOwn(defaults, name) ? defaults[name] : 'Custom…'}
+										</Text>
+									</HStack>
+								</Pressable>
+							))
+						)}
+					</VStack>
+				</ScrollableArea>
+			)}
+		</VStack>
+	)
+}
+
+function StylePropRow(props: {
+	site: PanelStyleEntry
+	path: string[]
+	disabled: boolean
+	focus: boolean
+	bind: (key: string, input: TextInputHandle | null) => void
+}) @{
+	const input = useRef<TextInputHandle | null>(null)
+	const site = props.site
+	const key = props.path.join('.')
+	const prop = site.properties.find((p) => p.path.join('.') === key)
+	const added = !prop
+	const value = model.stylePropValue(site, props.path)
+	const deleted = model.stylePropDeleted(site, props.path)
+	const dynamic = !!prop && !prop.editable
+	const changed = key in site.draft.set && (added || site.draft.set[key] !== prop?.value)
+	const editable = site.writable && !props.disabled && !dynamic && !deleted
+	useEffect(() => {
+		const timer = setTimeout(() => props.bind(`${site.id}:${key}`, input.current), 0)
+		return () => {
+			clearTimeout(timer)
+			props.bind(`${site.id}:${key}`, null)
+		}
+	}, [])
+
+	useEffect(() => {
+		if (props.focus) {
+			// Wait for the picker to close and the new field handle to mount.
+			const timer = setTimeout(() => {
+				if (input.current) {
+					input.current.focus()
+				}
+			}, 0)
+
+			return () => clearTimeout(timer)
+		}
+	}, [props.focus])
+
+	return (
+		<HStack className="panel-row">
+			<Text
+				id={`style-path-${site.id}-${key}`}
+				className={['panel-property-name', deleted && 'panel-property-name--deleted']}
+				maxLines={1}
+			>
+				{key}
+			</Text>
+			<HStack
+				className={[
+					'panel-control',
+					changed && !deleted && 'panel-control--changed',
+					!editable && 'panel-control--disabled',
+				]}
+			>
+				<TextInput
+					ref={input}
+					id={`style-input-${site.id}-${key}`}
+					className={['panel-field', changed && !deleted && 'panel-field--changed']}
+					value={dynamic ? 'dynamic' : value == null ? '' : String(value)}
+					isDisabled={!editable}
+					accessibilityLabel={`${key}${dynamic ? ' (dynamic, read only)' : deleted ? ' (deleted)' : added ? ' (added)' : ''}`}
+					onChange={(v: string) => model.styleSet(site.id, props.path, v)}
+					web={{
+						onkeydown: (event: KeyboardEvent) => {
+							if (!editable) {
+								return
+							}
+
+							if ((event.metaKey || event.ctrlKey) && event.key === 'Backspace') {
+								event.preventDefault()
+								model.styleDelete(site.id, props.path)
+							}
+
+							if (
+								typeof prop?.value === 'number' &&
+								(event.key === 'ArrowUp' || event.key === 'ArrowDown')
+							) {
+								event.preventDefault()
+								model.styleSet(
+									site.id,
+									props.path,
+									String(
+										Number(value) +
+											(event.key === 'ArrowUp' ? 1 : -1) *
+												(event.shiftKey ? 10 : event.altKey ? 0.1 : 1),
+									),
+								)
+							}
+						},
+					}}
+				/>
+			</HStack>
+			{dynamic || !site.writable ? (
+				<View className="panel-action-slot" />
+			) : deleted || changed ? (
+				<Action
+					id={`style-undo-${site.id}-${key}`}
+					label={`Restore ${key}`}
+					icon="undo-2"
+					iconOnly
+					disabled={props.disabled}
+					onPress={() => model.styleRestore(site.id, props.path)}
+				/>
+			) : (
+				<Action
+					id={`style-delete-${site.id}-${key}`}
+					label={`Delete ${key}`}
+					icon="trash-2"
+					iconOnly
+					disabled={props.disabled}
+					onPress={() => model.styleDelete(site.id, props.path)}
+				/>
+			)}
+		</HStack>
+	)
+}
+
+function StyleSite(props: {
+	site: PanelStyleEntry
+	query: string
+	disabled: boolean
+	bind: (key: string, input: TextInputHandle | null) => void
+}) @{
+	const [open, setOpen] = useState(true)
+	const [focusPath, setFocusPath] = useState<string | null>(null)
+	const site = props.site
+	const paths = [
+		...site.properties.map((p) => p.path),
+		...model.styleAddedPaths(site).map((p) => p.split('.')),
+	]
+
+	const visible = paths.filter((p) =>
+		p.join('.').toLowerCase().includes(props.query.trim().toLowerCase()),
+	)
+
+	// Filtering reveals matches without overwriting the user's disclosure choice.
+	const expanded = open || !!props.query.trim()
+	return (
+		<VStack id={`stylesite-${site.id}`} className="panel-style-site">
+			<View className="panel-rule" />
+			<HStack className="panel-section-heading">
+				<Action
+					id={`style-toggle-${site.id}`}
+					label={site.label}
+					icon={expanded ? 'chevron-down' : 'chevron-right'}
+					expanded={expanded}
+					className="panel-disclosure"
+					onPress={() => setOpen(!expanded)}
+				/>
+				<Text className="panel-note">{`${site.kind} :${site.line}`}</Text>
+				{site.dirty ? (
+					<Action
+						id={`style-revert-${site.id}`}
+						label={`Revert ${site.label}`}
+						icon="undo-2"
+						iconOnly
+						disabled={props.disabled}
+						onPress={() => model.revert(site.id)}
+					/>
 				) : null}
 			</HStack>
-			{preview.errors.length ? (
-				<Text testID="preview.errors">
-					{preview.errors.map((e) => `${e.file}: ${e.message}`).join('; ')}
-				</Text>
+			{expanded ? (
+				<>
+					{site.preview === 'unavailable' ? (
+						<Text className="panel-note">Preview unavailable</Text>
+					) : null}
+					{!site.writable ? <Text className="panel-note">{site.reason ?? 'Read only'}</Text> : null}
+					{visible.map((path) => (
+						<StylePropRow
+							key={path.join('.')}
+							site={site}
+							path={path}
+							disabled={props.disabled}
+							focus={focusPath === path.join('.')}
+							bind={props.bind}
+						/>
+					))}
+					{visible.length === 0 && props.query.trim() ? (
+						<Text className="panel-note">No matching properties.</Text>
+					) : null}
+					{site.writable ? (
+						<AddProperty site={site} disabled={props.disabled} onAdded={setFocusPath} />
+					) : null}
+				</>
 			) : null}
-			{snap.previewStale ? (
-				<Text testID="preview.stale">Drafts changed — refresh the preview before saving.</Text>
-			) : null}
-			<ScrollableArea style={{ height: 400 }}>
-				<VStack>
-					{preview.files.length === 0 ? (
-						<Text testID="preview.empty">No file changes.</Text>
+		</VStack>
+	)
+}
+
+function PanelHeader() @{
+	useStore(modelTick)
+	const servers = useStore(servers$)
+	const onTop = useStore(keepOnTop$)
+	const snap = model.snapshot()
+	const connected = snap.status === 'connected'
+	const disabled = !connected || snap.saving
+	const currentServer = servers.find((s) => serverKey(s) === model.connectedKey)
+	return (
+		<VStack className="panel-header">
+			<HStack className="panel-toolbar">
+				<View className="panel-server">
+					{servers.length ? (
+						<Selector
+							id="servers.name"
+							className="panel-server-select"
+							value={serverLabel(currentServer ?? servers[0])}
+							options={servers.map((s) => ({ value: serverLabel(s) }))}
+							accessibilityLabel="Dev server"
+							isDisabled={snap.saving}
+							onValueChange={(label: string | null) => {
+								const server = servers.find((s) => serverLabel(s) === label)
+								if (server) {
+									model.connect(server)
+								}
+							}}
+						/>
 					) : (
-						preview.files.map((f) => (
-							<VStack key={f.file} testID={`preview-file-${f.file}`} style={{ paddingBottom: 8 }}>
-								<Text style={{ fontWeight: 'bold' }}>{f.file}</Text>
-								{f.diff.split('\n').map((line, i) => (
-									<Text key={i} style={diffLineStyle(line)}>
-										{line.length ? line : ' '}
-									</Text>
+						<Text>No dev servers found</Text>
+					)}
+				</View>
+				<Action
+					id="pick"
+					label={snap.picking ? 'Cancel pick' : 'Pick element'}
+					icon="square-mouse-pointer"
+					iconOnly
+					active={snap.picking}
+					disabled={disabled || !snap.clients.some((c) => c.label === 'web')}
+					onPress={() => model.pick(!snap.picking)}
+				/>
+				{supportsKeepOnTop ? (
+					<Action
+						id="keep-on-top"
+						label={onTop ? 'Stop keeping on top' : 'Keep on top'}
+						icon="pin"
+						iconOnly
+						active={onTop}
+						onPress={() => {
+							keepOnTop$.set(!onTop)
+							setKeepOnTop(!onTop)
+						}}
+					/>
+				) : null}
+			</HStack>
+			<HStack className="panel-status-line">
+				<Text id="status" className={['panel-note', !connected && 'panel-status--offline']}>
+					{connected ? 'Connected' : snap.status === 'connecting' ? 'Connecting…' : 'Disconnected'}
+				</Text>
+				<Text id="clients" className="panel-note">
+					{snap.clients.map((c) => c.label).join(', ')}
+				</Text>
+				<View className="panel-spacer" />
+				<Text className="panel-note">{`${servers.length} server${servers.length === 1 ? '' : 's'}`}</Text>
+			</HStack>
+		</VStack>
+	)
+}
+
+function PanelContent() @{
+	const [contentHeight, setContentHeight] = useState(0)
+	const content = usePanelContent(contentHeight, setContentHeight)
+	useStore(modelTick)
+	const servers = useStore(servers$)
+	const [query, setQuery] = useState('')
+	const inputs = useRef(new Map<string, TextInputHandle>())
+	const snap = model.snapshot()
+	const connected = snap.status === 'connected'
+	const disabled = !connected || snap.saving
+	const groups = model.groupedEntries()
+	const styleGroups = model.groupedStyles()
+	const bind = (key: string, input: TextInputHandle | null) => {
+		if (input) {
+			inputs.current.set(key, input)
+		} else {
+			inputs.current.delete(key)
+		}
+	}
+
+	return (
+		<ScrollableArea
+			id="panel-scroll"
+			className="panel-scroll"
+			ref={content.viewportRef}
+			style={
+				{ '--panel-content-height': `${contentHeight}px` } as CSSProperties &
+					Record<`--${string}`, string>
+			}
+		>
+			<VStack
+				id="panel-content"
+				className="panel-content"
+				ref={content.ref}
+				style={{ minHeight: contentHeight }}
+			>
+				{servers.length === 0 ? (
+					<Text id="servers.empty" className="panel-note">
+						Start a Vite dev server that uses tweaks().
+					</Text>
+				) : null}
+				{connected && snap.entries.length === 0 ? (
+					<Text id="entries.empty" className="panel-note">
+						No tweaks on screen. Open a screen that calls useTweak.
+					</Text>
+				) : null}
+				{groups.length ? (
+					<VStack className="panel-section">
+						<Text className="panel-heading">Tweaks</Text>
+						{groups.map((g) => (
+							<TweakGroup key={g.group} group={g.group} entries={g.entries} disabled={disabled} />
+						))}
+					</VStack>
+				) : null}
+				{snap.styles.length ? (
+					<VStack id="styles.section" className="panel-section">
+						<HStack className="panel-section-heading">
+							<Text className="panel-heading">Styles</Text>
+							<View className="panel-spacer" />
+							<Text className="panel-note">{`${snap.styles.length} sites`}</Text>
+						</HStack>
+						<TextInput
+							id="style-filter"
+							className={['panel-field', 'panel-property-filter']}
+							value={query}
+							placeholder="Filter properties"
+							accessibilityLabel="Filter properties"
+							onChange={setQuery}
+							onSubmit={() => {
+								inputs.current.values().next().value?.focus()
+							}}
+						/>
+						{model.pickFilter ? (
+							<HStack className="panel-filter-state">
+								<Text
+									id="pick.filter"
+									className="panel-note"
+								>{`${model.pickFilter.length} picked sites`}</Text>
+								<View className="panel-spacer" />
+								<Action
+									id="pick.clear"
+									label="Show all style sites"
+									icon="x"
+									iconOnly
+									onPress={() => model.clearPickFilter()}
+								/>
+							</HStack>
+						) : null}
+						{snap.picking ? (
+							<Text className="panel-note">
+								Click an element in the web app to pick its styles.
+							</Text>
+						) : null}
+						{styleGroups.map((g) => (
+							<VStack key={g.file} className="panel-file-group">
+								<Text className="panel-source" maxLines={1}>
+									{g.file}
+								</Text>
+								{g.sites.map((site) => (
+									<StyleSite
+										key={site.id}
+										site={site}
+										query={query}
+										disabled={disabled}
+										bind={bind}
+									/>
 								))}
 							</VStack>
-						))
-					)}
-				</VStack>
-			</ScrollableArea>
-			<HStack style={{ gap: 8, alignItems: 'center' }}>
-				<Button
-					testID="save.confirm"
-					label="Confirm save"
-					isDisabled={snap.previewStale || snap.saving}
-					clickAction={() => model.confirmSave()}
-				/>
-				{snap.previewStale ? (
-					<Button testID="preview.refresh" label="Refresh" clickAction={() => model.requestPreview()} />
+						))}
+					</VStack>
 				) : null}
-				<Button testID="save.cancel" label="Cancel" clickAction={() => model.cancelPreview()} />
+			</VStack>
+		</ScrollableArea>
+	)
+}
+
+function PanelFooter() @{
+	useStore(modelTick)
+	const snap = model.snapshot()
+	const dirty = model.dirtyCount()
+	const connected = snap.status === 'connected'
+	const disabled = !connected || snap.saving
+	return (
+		<VStack className="panel-footer" accessibilityLiveRegion="polite">
+			<HStack className="panel-status-line">
+				<Text
+					id="dirty-count"
+					className={['panel-note', dirty > 0 && 'panel-unsaved']}
+				>{`${dirty} unsaved${snap.unmountedDirty.length ? ` (${snap.unmountedDirty.length} not on screen)` : ''}`}</Text>
+				<View className="panel-spacer" />
+				<Text className="panel-note">{connected ? '● Connected' : '● Offline'}</Text>
+			</HStack>
+			{snap.saving ? (
+				<Text className="panel-note">Saving…</Text>
+			) : snap.saveResult ? (
+				<Text id="save-result" className={snap.saveResult.ok ? 'panel-note' : 'panel-error'}>
+					{snap.saveResult.ok
+						? `Saved ${snap.saveResult.saved.length} file(s)`
+						: snap.saveResult.errors
+								.map((e) => `${e.file ? `${e.file}: ` : ''}${e.message}`)
+								.join('; ')}
+				</Text>
+			) : null}
+			<HStack className="panel-footer-actions">
+				<Action
+					id="revert-all"
+					label="Revert all"
+					icon="rotate-ccw"
+					disabled={disabled || dirty === 0}
+					onPress={() => model.revertAll()}
+				/>
+				<View className="panel-spacer" />
+				<Action
+					id="save"
+					label="Save changes to source"
+					icon="save"
+					iconOnly
+					primary
+					disabled={disabled || dirty === 0}
+					onPress={() => model.save()}
+				/>
 			</HStack>
 		</VStack>
-	);
+	)
 }
 
 export function App() @{
-	useStore(modelTick);
-	const servers = useStore(servers$);
-	const onTop = useStore(keepOnTop$);
-	const snap = model.snapshot();
-	const groups = model.groupedEntries();
-	const styleGroups = model.groupedStyles();
-	const dirty = model.dirtyCount();
-	const unmounted = snap.unmountedDirty.length;
-
-	return (
-		<VStack style={{ gap: 8, padding: 12, height: 720 }}>
-			
-			{servers.length === 0 ? (
-				<Text testID="servers.empty">
-					No dev servers found. Start a Vite dev server that uses tweaks().
-				</Text>
-			) : servers.length === 1 ? (
-				<Text testID="servers.name">{servers[0].name}</Text>
-			) : (
-				<Selector
-					value={serverLabel(servers.find((s) => serverKey(s) === model.connectedKey) ?? servers[0])}
-					options={servers.map((s) => ({ value: serverLabel(s) }))}
-					onValueChange={(name: string | null) => {
-						const s = servers.find((x) => serverLabel(x) === name);
-						if (s) model.connect(s);
-					}}
-				/>
-			)}
-			<HStack style={{ gap: 8, alignItems: 'center' }}>
-				<StatusDot
-					variant={snap.status === 'connected' ? 'success' : snap.status === 'connecting' ? 'warning' : 'error'}
-					label={snap.status}
-				/>
-				<Text testID="status">
-					{snap.status === 'connected'
-						? 'Connected'
-						: snap.status === 'connecting'
-							? 'Connecting…'
-							: 'Disconnected'}
-				</Text>
-				{snap.clients.length ? (
-					<Text testID="clients">{snap.clients.map((c) => c.label).join(', ')}</Text>
-				) : null}
-				{supportsKeepOnTop ? (
-					<HStack style={{ gap: 4, alignItems: 'center' }}>
-						<Text>Keep on top</Text>
-						<Switch
-							testID="keep-on-top"
-							checked={onTop}
-							onCheckedChange={(v: boolean) => {
-								keepOnTop$.set(v);
-								setKeepOnTop(v);
-							}}
-						/>
-					</HStack>
-				) : null}
-			</HStack>
-			{snap.preview ? (
-				<SavePreviewView />
-			) : (
-				<>
-					<ScrollableArea style={{ height: 460 }}>
-						{snap.status === 'connected' && snap.entries.length === 0 ? (
-							<Text testID="entries.empty">No tweaks on screen. Open a screen that calls useTweak.</Text>
-						) : (
-							<VStack style={{ flexDirection: 'column' }}>
-								{groups.map((g) => (
-									<VStack key={g.group} style={{ gap: 4, paddingTop: 8 }}>
-										<Text style={{ fontWeight: 'bold' }}>{g.group}</Text>
-										{g.entries.map((e) => (
-											<Row key={e.id} entry={e} />
-										))}
-									</VStack>
-								))}
-								{styleGroups.length ? (
-									<VStack testID="styles.section" style={{ gap: 4, paddingTop: 8 }}>
-										{model.pickFilter ? (
-											<HStack style={{ gap: 8, alignItems: 'center' }}>
-												<Text testID="pick.filter">{`Showing ${model.pickFilter.length} picked sites`}</Text>
-												<Button testID="pick.clear" label="Show all" clickAction={() => model.clearPickFilter()} />
-											</HStack>
-										) : null}
-										<Text style={{ fontWeight: 'bold' }}>Styles</Text>
-										{styleGroups.map((g) => (
-											<VStack key={g.file} style={{ gap: 4, paddingLeft: 4 }}>
-												<Text style={{ fontWeight: 'bold' }}>{g.file}</Text>
-												{g.sites.map((site) => (
-													<StyleSiteCard key={site.id} site={site} />
-												))}
-											</VStack>
-										))}
-									</VStack>
-								) : null}
-							</VStack>
-						)}
-					</ScrollableArea>
-					<HStack style={{ gap: 8, alignItems: 'center' }}>
-						<Text testID="dirty-count">
-							{dirty} unsaved{unmounted ? ` (${unmounted} not on screen)` : ''}
-						</Text>
-						<Button testID="revert-all" label="Revert all" clickAction={() => model.revertAll()} />
-						<Button
-							testID="pick"
-							label={snap.picking ? 'Cancel pick' : 'Pick'}
-							isDisabled={!snap.clients.some((c) => c.label === 'web')}
-							clickAction={() => model.pick(!snap.picking)}
-						/>
-						<Button
-							testID="save"
-							label={snap.previewing ? 'Previewing…' : 'Save…'}
-							isDisabled={dirty === 0 || snap.saving || snap.previewing}
-							clickAction={() => model.requestPreview()}
-						/>
-						{snap.saveResult ? (
-							<Text testID="save-result">
-								{snap.saveResult.ok
-									? `Saved ${snap.saveResult.saved.length} file(s)`
-									: snap.saveResult.errors.map((x) => `${x.file}: ${x.message}`).join('; ')}
-							</Text>
-						) : null}
-					</HStack>
-				</>
-			)}
-		</VStack>
-	);
+	<VStack id="tweaks-panel" className="tweaks-panel">
+		<PanelHeader />
+		<View className="panel-rule" />
+		<PanelContent />
+		<View className="panel-rule" />
+		<PanelFooter />
+	</VStack>
 }

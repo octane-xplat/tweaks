@@ -30,6 +30,7 @@ export interface PanelServerInfo {
 export function serverKey(s: PanelServerInfo): string {
 	return `${s.url} ${s.token}`
 }
+
 // Display label: app name plus its port so same-name servers are distinct.
 export function serverLabel(s: PanelServerInfo): string {
 	return `${s.name} — :${s.url.split(':').pop()?.split('/')[0] ?? '?'}`
@@ -60,7 +61,11 @@ export interface PanelSnapshot {
 	styles: PanelStyleEntry[]
 	unmountedDirty: UnmountedDirtyEntry[]
 	saving: boolean
-	saveResult: { ok: boolean; saved: string[]; errors: { id?: string; file: string; message: string }[] } | null
+	saveResult: {
+		ok: boolean
+		saved: string[]
+		errors: { id?: string; file: string; message: string }[]
+	} | null
 	preview: SavePreview | null
 	previewing: boolean
 	// Drafts changed on the server after the preview was computed — Confirm is
@@ -116,7 +121,9 @@ export class PanelModel {
 	}
 
 	private notify() {
-		for (const l of this.listeners) l()
+		for (const l of this.listeners) {
+			l()
+		}
 	}
 
 	snapshot(): PanelSnapshot {
@@ -138,9 +145,30 @@ export class PanelModel {
 	}
 
 	connect(server: PanelServerInfo) {
+		// A previous server must not publish into the newly selected server's
+		// editor, or schedule a reconnect when its transport is closed.
+		if (this.transport) {
+			this.transport.onclose = null
+			this.transport.onmessage = null
+			this.transport.onopen = null
+			this.transport.close()
+			this.transport = null
+		}
+		this.pickFilter = null
+		this.picking = false
+		this.saving = false
+		this.saveResult = null
+		// The next socket can open before its first state message. Never make
+		// the previous server's ids or dirty count editable in that interval.
+		this.entries = []
+		this.styles = []
+		this.unmountedDirty = []
+		this.clients = []
 		this.server = server
 		this.connectedKey = serverKey(server)
-		this.retryTimer !== null && clearTimeout(this.retryTimer)
+		if (this.retryTimer !== null) {
+			clearTimeout(this.retryTimer)
+		}
 		this.retries = 0
 		this.open()
 	}
@@ -150,9 +178,13 @@ export class PanelModel {
 	// app restarted → new port+token), else the first entry. Returns the chosen
 	// server (or null when the list is empty).
 	syncServers(list: PanelServerInfo[]): PanelServerInfo | null {
-		if (!list.length) return null
+		if (!list.length) {
+			return null
+		}
 		const current = list.find((s) => serverKey(s) === this.connectedKey)
-		if (current) return current
+		if (current) {
+			return current
+		}
 		const sameRoot = list.find((s) => this.serverRoot && s.root === this.serverRoot)
 		const next = sameRoot ?? list[0]
 		this.connect(next)
@@ -162,7 +194,9 @@ export class PanelModel {
 	disconnect() {
 		this.server = null
 		this.connectedKey = null
-		this.retryTimer !== null && clearTimeout(this.retryTimer)
+		if (this.retryTimer !== null) {
+			clearTimeout(this.retryTimer)
+		}
 		this.transport?.close()
 		this.transport = null
 		this.status = 'idle'
@@ -171,7 +205,9 @@ export class PanelModel {
 
 	private open() {
 		const server = this.server
-		if (!server) return
+		if (!server) {
+			return
+		}
 		const sep = server.url.includes('?') ? '&' : '?'
 		const url = `${server.url}${sep}token=${encodeURIComponent(server.token)}&role=panel&clientId=${this.clientId}&label=${this.label}`
 		this.status = 'connecting'
@@ -192,6 +228,17 @@ export class PanelModel {
 		t.onclose = () => {
 			this.transport = null
 			if (this.server) {
+				if (this.saving) {
+					this.saving = false
+					this.saveResult = {
+						ok: false,
+						saved: [],
+						errors: [
+							{ file: '', message: 'Connection lost while saving. Check source before retrying.' },
+						],
+					}
+				}
+
 				this.status = 'disconnected'
 				this.notify()
 				this.scheduleRetry()
@@ -200,7 +247,9 @@ export class PanelModel {
 	}
 
 	private scheduleRetry() {
-		if (!this.server) return
+		if (!this.server) {
+			return
+		}
 		// Backoff 1s → 5s cap (same contract as the app client).
 		const delay = Math.min(1000 * 2 ** this.retries++, 5000)
 		this.retryTimer = setTimeout(() => this.open(), delay)
@@ -230,11 +279,15 @@ export class PanelModel {
 			if (this.pickFilter) {
 				const mounted = new Set(this.styles.map((s) => s.id))
 				this.pickFilter = this.pickFilter.filter((id) => mounted.has(id))
-				if (!this.pickFilter.length) this.pickFilter = null
+				if (!this.pickFilter.length) {
+					this.pickFilter = null
+				}
 			}
+
 			if (this.preview && this.dirtyFingerprint() !== this.previewFingerprint) {
 				this.previewStale = true
 			}
+
 			this.notify()
 		} else if (message.type === 'saveResult') {
 			this.saving = false
@@ -247,11 +300,13 @@ export class PanelModel {
 				this.notify()
 				return
 			}
+
 			this.preview = {
 				files: message.files ?? [],
 				truncated: message.truncated ?? false,
 				errors: message.errors ?? [],
 			}
+
 			this.previewStale = this.dirtyFingerprint() !== this.previewFingerprint
 			this.notify()
 		}
@@ -268,30 +323,39 @@ export class PanelModel {
 
 	set(id: string, value: TweakValue): boolean {
 		const entry = this.entries.find((e) => e.id === id)
-		if (!entry || !this.validValue(entry, value)) return false
+		if (!entry || !this.validValue(entry, value)) {
+			return false
+		}
+		this.saveResult = null
 		this.send({ type: 'set', id, value })
 		return true
 	}
 
 	revert(id: string) {
+		this.saveResult = null
 		this.send({ type: 'revert', ids: [id] })
 	}
 
 	revertAll() {
+		this.saveResult = null
 		this.send({ type: 'revert' })
 	}
 
 	save() {
-		if (this.saving || this.dirtyCount() === 0) return
+		if (this.saving || this.dirtyCount() === 0) {
+			return
+		}
 		this.saving = true
+		this.saveResult = null
 		this.send({ type: 'save' })
 		this.notify()
 	}
 
-	// Default Save flow: ask the server for the planned diff. `save()` stays
-	// the one-shot path for callers that skip the preview.
+	// Optional protocol capability; the desktop editor uses direct save().
 	requestPreview() {
-		if (this.previewing || this.saving || this.dirtyCount() === 0) return
+		if (this.previewing || this.saving || this.dirtyCount() === 0) {
+			return
+		}
 		this.previewing = true
 		this.previewStale = false
 		this.previewFingerprint = this.dirtyFingerprint()
@@ -308,7 +372,9 @@ export class PanelModel {
 	// Confirm the previewed plan: run the existing save. Refuses a stale
 	// preview — drafts changed since it was computed.
 	confirmSave() {
-		if (!this.preview || this.previewStale || this.saving) return
+		if (!this.preview || this.previewStale || this.saving) {
+			return
+		}
 		this.preview = null
 		this.save()
 	}
@@ -344,7 +410,9 @@ export class PanelModel {
 	// The value a property row shows: draft override, else the source literal.
 	stylePropValue(site: PanelStyleEntry, path: string[]): StyleValue | null {
 		const key = path.join('.')
-		if (key in site.draft.set) return site.draft.set[key]
+		if (key in site.draft.set) {
+			return site.draft.set[key]
+		}
 		return site.properties.find((p) => p.path.join('.') === key)?.value ?? null
 	}
 
@@ -361,42 +429,55 @@ export class PanelModel {
 
 	styleSet(id: string, path: string[], text: string): boolean {
 		const site = this.styles.find((e) => e.id === id)
-		if (!site || !site.writable || !path.length || path.some((p) => !p)) return false
+		if (!site || !site.writable || !path.length || path.some((p) => !p)) {
+			return false
+		}
+		this.saveResult = null
 		const original = site.properties.find((p) => p.path.join('.') === path.join('.'))
 		// Numbers stay numbers when the source was numeric and the text parses.
 		const parsed = Number(text)
 		const value: StyleValue =
-			typeof original?.value === 'number' && Number.isFinite(parsed)
-				? parsed
-				: text
+			typeof original?.value === 'number' && Number.isFinite(parsed) ? parsed : text
 		this.send({ type: 'styleSet', id, path, value })
 		return true
 	}
 
 	styleDelete(id: string, path: string[]) {
+		this.saveResult = null
 		this.send({ type: 'styleDelete', id, path })
 	}
 
-	// Undo a draft-deleted row: re-set the original literal.
+	// Restore changed/deleted literals; restoring a new property removes it.
 	styleRestore(id: string, path: string[]) {
 		const site = this.styles.find((e) => e.id === id)
 		const original = site?.properties.find((p) => p.path.join('.') === path.join('.'))
 		if (original?.value != null) {
+			this.saveResult = null
 			this.send({ type: 'styleSet', id, path, value: original.value })
+		} else if (!original && site && path.join('.') in site.draft.set) {
+			this.styleDelete(id, path)
 		}
 	}
 
 	// Add-property name validation: non-empty segments; inline sites are flat.
 	styleAddNameValid(site: PanelStyleEntry, name: string): boolean {
-		if (!name.trim()) return false
+		if (!name.trim()) {
+			return false
+		}
 		const segs = name.split('.')
-		if (segs.some((p) => !p.trim())) return false
-		if (site.kind === 'inline' && segs.length !== 1) return false
+		if (segs.some((p) => !p.trim())) {
+			return false
+		}
+		if (site.kind === 'inline' && segs.length !== 1) {
+			return false
+		}
 		return true
 	}
 
 	styleAdd(site: PanelStyleEntry, name: string, text: string) {
-		if (!this.styleAddNameValid(site, name)) return false
+		if (!this.styleAddNameValid(site, name)) {
+			return false
+		}
 		return this.styleSet(site.id, name.trim().split('.'), text)
 	}
 
@@ -414,7 +495,10 @@ export class PanelModel {
 		const groups = new Map<string, PanelStyleEntry[]>()
 		for (const site of styles) {
 			let list = groups.get(site.file)
-			if (!list) groups.set(site.file, (list = []))
+			if (!list) {
+				groups.set(site.file, (list = []))
+			}
+
 			list.push(site)
 		}
 		return [...groups].map(([file, sites]) => ({ file, sites }))
@@ -431,7 +515,10 @@ export class PanelModel {
 		for (const entry of sorted) {
 			const key = entry.group ?? 'General'
 			let list = groups.get(key)
-			if (!list) groups.set(key, (list = []))
+			if (!list) {
+				groups.set(key, (list = []))
+			}
+
 			list.push(entry)
 		}
 		return [...groups].map(([group, entries]) => ({ group, entries }))
@@ -450,8 +537,7 @@ export function validateForInput(input: TweakInput, value: TweakValue): boolean 
 			return typeof value === 'string' && HEX_COLOR_RE.test(value)
 		case 'select':
 			return (
-				(typeof value === 'string' || typeof value === 'number') &&
-				input.options.includes(value)
+				(typeof value === 'string' || typeof value === 'number') && input.options.includes(value)
 			)
 	}
 }

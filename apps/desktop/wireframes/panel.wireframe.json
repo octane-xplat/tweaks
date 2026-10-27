@@ -1,0 +1,3292 @@
+{
+  "version": 1,
+  "name": "Octane Tweaks · Sculpted UI adapted to a desktop panel",
+  "screens": [
+    {
+      "name": "Mounted tweaks and styles · Sculpted baseline",
+      "width": 380,
+      "height": 720,
+      "root": {
+        "type": "frame",
+        "width": "fill",
+        "height": "fill",
+        "direction": "column",
+        "children": [
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": 68,
+            "direction": "column",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 24,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "playground — :5200 ⌄",
+                    "width": "fill",
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Server selector occupies Sculpted’s component-selector position. Menu contains playground — :5200 and playground — :5202; retain port and optional root to distinguish servers. No credentials. Lucide ChevronDown. No server: waiting label and the existing start-server instruction in the body."
+                  },
+                  {
+                    "type": "rect",
+                    "label": "⌖",
+                    "width": 24,
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide SquareMousePointer, 16px (13px for row actions). Tooltip and accessible name: Pick element. Use Sculpted’s header Inspect location and stable icon. Pressed while picking; activate again to stop. Native-only client: disabled with Web app required. Picking chooses style sites rather than replacing the mounted tweak inventory."
+                  },
+                  {
+                    "type": "rect",
+                    "label": "⚲",
+                    "width": 24,
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide Pin, 16px (13px for row actions). Tooltip and accessible name: Keep on top. Native-only window state, on in these examples. Omit in web. This replaces browser docking/window actions, which do not apply to a standalone native window.",
+                    "fill": "accent"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              },
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 18,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "● Connected · web",
+                    "width": "fill",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  },
+                  {
+                    "type": "text",
+                    "text": "2 servers",
+                    "width": "hug",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              }
+            ],
+            "padding": {
+              "x": 12,
+              "y": 10
+            },
+            "gap": 6,
+            "annotations": "Match Sculpted PanelHeader alignment, 12px horizontal inset, 6px control spacing and 24px icon targets. Server identity replaces selected-component identity. The second status line is needed for an external multi-server panel. Connecting/disconnected replace the status in place and disable live edits/save. Native window chrome supplies close; no duplicate close/dock/settings controls or empty More menu."
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": "fill",
+            "direction": "row",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": "fill",
+                "direction": "column",
+                "children": [
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 24,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Tweaks",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 22,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "⌄ Appearance",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary",
+                        "annotations": "Lucide ChevronRight/ChevronDown disclosure; preserve expansion and group ordering during edits. This group hierarchy is required by useTweak metadata."
+                      },
+                      {
+                        "type": "text",
+                        "text": "3 entries",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "accent",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "frame",
+                        "width": 176,
+                        "height": 24,
+                        "direction": "row",
+                        "children": [
+                          {
+                            "type": "rect",
+                            "label": "",
+                            "width": 16,
+                            "height": 16,
+                            "cornerRadius": 5,
+                            "annotations": "Color swatch for #60a5fa; the wireframe palette is symbolic. Follow Sculpted’s swatch/value arrangement, retaining the current app’s hex-only editing capability.",
+                            "fill": "accent"
+                          },
+                          {
+                            "type": "rect",
+                            "label": "#60a5fa",
+                            "width": "fill",
+                            "height": 24,
+                            "cornerRadius": 5,
+                            "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Hex input; retain invalid intermediate input locally and expose validation at the field. No token catalog is implied by this example.",
+                            "fill": "inset",
+                            "stroke": "accent"
+                          }
+                        ],
+                        "align": "center",
+                        "gap": 6
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore accent. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "easing",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "ease-out ⌄",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Use the existing type-specific select, text field, or numeric stepper. Preserve numeric select option types; reject non-finite numeric input. Values and labels use Sculpted’s code typography.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "title",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "Hello, Octane",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Use the existing type-specific select, text field, or numeric stepper. Preserve numeric select option types; reject non-finite numeric input. Values and labels use Sculpted’s code typography.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 8,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 22,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "⌄ Motion",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary",
+                        "annotations": "Lucide ChevronRight/ChevronDown disclosure; preserve expansion and group ordering during edits. This group hierarchy is required by useTweak metadata."
+                      },
+                      {
+                        "type": "text",
+                        "text": "3 entries",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "duration",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "frame",
+                        "width": 176,
+                        "height": 24,
+                        "direction": "row",
+                        "children": [
+                          {
+                            "type": "frame",
+                            "width": "fill",
+                            "height": 20,
+                            "direction": "row",
+                            "children": [
+                              {
+                                "type": "rect",
+                                "label": "",
+                                "width": "fill",
+                                "height": 3,
+                                "cornerRadius": 5,
+                                "fill": "accent"
+                              },
+                              {
+                                "type": "rect",
+                                "label": "",
+                                "width": 7,
+                                "height": 12,
+                                "cornerRadius": 5,
+                                "fill": "accent"
+                              },
+                              {
+                                "type": "rect",
+                                "label": "",
+                                "width": 20,
+                                "height": 3,
+                                "cornerRadius": 5,
+                                "fill": "overlay"
+                              }
+                            ],
+                            "align": "center",
+                            "gap": 0,
+                            "annotations": "Existing bounded number control (0–1000, step 20). Retain slider plus exact number for generic useTweak numbers, which Sculpted’s CSS-only property editor does not cover."
+                          },
+                          {
+                            "type": "rect",
+                            "label": "280",
+                            "width": 48,
+                            "height": 24,
+                            "cornerRadius": 5,
+                            "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. ",
+                            "fill": "inset",
+                            "stroke": "accent"
+                          }
+                        ],
+                        "align": "center",
+                        "gap": 6
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore duration. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "enabled",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "frame",
+                        "width": 176,
+                        "height": 24,
+                        "direction": "row",
+                        "children": [
+                          {
+                            "type": "rect",
+                            "label": "● on",
+                            "width": 44,
+                            "height": 22,
+                            "cornerRadius": 5,
+                            "fill": "accent"
+                          },
+                          {
+                            "type": "text",
+                            "text": "true",
+                            "width": "fill",
+                            "height": 18,
+                            "role": "caption",
+                            "tone": "secondary",
+                            "align": "end"
+                          }
+                        ],
+                        "align": "center",
+                        "gap": 6
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "repeats",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "3                 ▴▾",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Use the existing type-specific select, text field, or numeric stepper. Preserve numeric select option types; reject non-finite numeric input. Values and labels use Sculpted’s code typography.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 12,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 24,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Styles",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary"
+                      },
+                      {
+                        "type": "text",
+                        "text": "3 sites",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 30,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "Filter properties",
+                        "width": "fill",
+                        "height": 28,
+                        "cornerRadius": 5,
+                        "annotations": "Reuse Sculpted PropertyFilterInput: filter property paths, keep the input full width, and Enter focuses the first visible match. Applies to Styles, not generic tweak groups. Preserve the query across live updates and Save. Distinguish this text filter from the picked-site filter; if no properties match, retain the filter and show No matching properties.",
+                        "stroke": "overlay"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 4,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 20,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "src/Card.tsrx",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Monospace source location. Reuse Sculpted’s quiet source typography. Group sites under one file label because multiple mounted sites may share the file."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "⌄ View",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "inline :34",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore View. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "padding",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "24",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "fill": "inset",
+                        "stroke": "accent"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore padding. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "gap",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "8",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "×",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Trash2, 16px (13px for row actions). Tooltip and accessible name: Remove gap. Match Sculpted’s subtle trailing remove-property action. Mark deleted and expose Restore until Save. The cross is a static glyph placeholder for the trash icon, not the final artwork."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "opacity",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "dynamic",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Non-literal source expression: read only, reason available at the row. Do not fabricate a runtime value. Follow Sculpted’s disabled property-field presentation.",
+                        "fill": "inset",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "+ Add property",
+                        "width": 124,
+                        "height": 26,
+                        "cornerRadius": 5,
+                        "annotations": "Reuse Sculpted AddPropertyMenu: one labeled trigger opens an anchored searchable list, not a property-name/value form. Lucide Plus, 14px. Arrow keys select, Enter adds and focuses the new row’s value, Escape closes and restores trigger focus; use Sculpted’s Shift+A shortcut. Candidate names must be valid for the inline/bamboo site; preserve valid custom names through a create option. Use known property defaults when available, otherwise collect an explicit value before applying the addition."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "› Text",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "inline :61",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 20,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "src/Toolbar.tsrx",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Monospace source location. Reuse Sculpted’s quiet source typography. Group sites under one file label because multiple mounted sites may share the file."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "› toolbar",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "bamboo :18",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": "fill",
+                    "direction": "column",
+                    "children": []
+                  }
+                ],
+                "padding": {
+                  "x": 12,
+                  "y": 8
+                }
+              },
+              {
+                "type": "frame",
+                "width": 4,
+                "height": "fill",
+                "direction": "column",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "",
+                    "width": 3,
+                    "height": 120,
+                    "cornerRadius": 5,
+                    "fill": "overlay"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": "fill",
+                    "direction": "column",
+                    "children": []
+                  }
+                ],
+                "padding": {
+                  "y": 8
+                }
+              }
+            ],
+            "annotations": "Reuse Sculpted’s single scrolling body with fixed header. Preserve scroll through editing/filtering/saving; no independent row scroll regions. A slim scrollbar is represented explicitly. "
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": 66,
+            "direction": "column",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 18,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "4 unsaved · 1 off screen",
+                    "width": "fill",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "accent",
+                    "annotations": "Panel-specific addition for manual saving: count dirty tweaks + dirty style sites + unmounted dirty items, not property rows. Counts are global even when text/pick filters hide edits. After Save, clear markers/counts only from confirmed server state."
+                  },
+                  {
+                    "type": "text",
+                    "text": "● Connected",
+                    "width": "hug",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              },
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 28,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "⟲ Revert all",
+                    "width": 112,
+                    "height": 28,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide RotateCcw, 16px; retain Revert all label because the action includes filtered/off-screen tweaks and style drafts. Revert restores source values; no source write."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "rect",
+                    "label": "▣",
+                    "width": 28,
+                    "height": 28,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide Save, 16px. Tooltip/accessibility name: Save changes to source. Save writes all pending drafts directly with no diff preview or confirmation. Show Saving… in the summary until completion. Preserve editor focus, filters, expanded sites, and scroll position. Success: Saved N files, and dirty clears from server state. Failure: retain drafts and show file-specific errors above the footer; a partial failure never claims complete success. Review the resulting diff in existing developer tools and perform follow-up saves as needed.",
+                    "fill": "ink"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              }
+            ],
+            "padding": {
+              "x": 12,
+              "y": 8
+            },
+            "gap": 4,
+            "annotations": "Necessary difference from Sculpted autosave: a fixed, low-chrome footer for explicit Save/Revert and global pending work. Match Sculpted’s neutral action styling; no large primary text button, review view, or autosave implication. Save stays at the lower right. Busy/failure status is inline, not a modal."
+          }
+        ],
+        "annotations": "Design baseline: ~/dev/alloc/sculpted/src/ui/inspectorPanel.tsx (PanelHeader/source headings), src/ui/inspectorEditableTargets.tsx (property grid, filter and AddPropertyMenu), src/ui/inputs/rawValueInput.tsx (normal/changed/disabled fields), and src/ui/inspectorPanel.css (code type and icon targets). Reuse Sculpted’s design rather than inventing an alternate inspector language. Actual styling should match its white surface, neutral gray rules/text, restrained blue changed inputs, 13px body text, 12px monospace code labels/source paths, 6px field corners, 24px icon targets and quiet source sections. The wireframe tool fixes palette/type, so the exact colors and fonts are implementation annotations, not a new theme. Use inline native style props to express the same hierarchy; lack of CSS does not justify redesigning it. Keep only necessary adaptations: server identity/connection, native keep-on-top, mounted tweak/file/site grouping, generic number/boolean/text/color/select controls, pick-as-site-filter, site-wide revert, and an explicit Save footer. Sculpted’s autosave/Git-dirty semantics are not reused: these dirty fields mean unsaved drafts and clear on confirmed save. Do not add browser-only docking, component-layer navigation, Panda token catalogs, responsive/state lanes, source attachment or other unsupported features. Lucide icon choices follow the approved mapping. Glyph placeholders: ⚲ Pin; ⌖ SquareMousePointer; ▣ Save; ↶ Undo2; × Trash2 in property rows or X in filter clear; ⌄/› ChevronDown/ChevronRight; ⟲ RotateCcw; + Plus. The format has no icon/SVG node, so glyphs are symbolic. All icon controls require accessible names, keyboard focus and tooltips. Pin and Pick keep stable icons with visible pressed treatment. No application code is changed by this design proposal. Primary editing state: all generic input types remain visible. Dirty is shown in the changed field and trailing restore affordance, with an unsaved summary in the footer. No extra dot gutter or row shading."
+      }
+    },
+    {
+      "name": "Picked styles · source and property states",
+      "width": 380,
+      "height": 720,
+      "root": {
+        "type": "frame",
+        "width": "fill",
+        "height": "fill",
+        "direction": "column",
+        "children": [
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": 68,
+            "direction": "column",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 24,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "playground — :5200 ⌄",
+                    "width": "fill",
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Server selector occupies Sculpted’s component-selector position. Menu contains playground — :5200 and playground — :5202; retain port and optional root to distinguish servers. No credentials. Lucide ChevronDown. No server: waiting label and the existing start-server instruction in the body."
+                  },
+                  {
+                    "type": "rect",
+                    "label": "⌖",
+                    "width": 24,
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide SquareMousePointer, 16px (13px for row actions). Tooltip and accessible name: Stop picking. Use Sculpted’s header Inspect location and stable icon. Pressed while picking; activate again to stop. Native-only client: disabled with Web app required. Picking chooses style sites rather than replacing the mounted tweak inventory.",
+                    "fill": "accent"
+                  },
+                  {
+                    "type": "rect",
+                    "label": "⚲",
+                    "width": 24,
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide Pin, 16px (13px for row actions). Tooltip and accessible name: Keep on top. Native-only window state, on in these examples. Omit in web. This replaces browser docking/window actions, which do not apply to a standalone native window.",
+                    "fill": "accent"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              },
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 18,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "● Connected · web",
+                    "width": "fill",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  },
+                  {
+                    "type": "text",
+                    "text": "2 servers",
+                    "width": "hug",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              }
+            ],
+            "padding": {
+              "x": 12,
+              "y": 10
+            },
+            "gap": 6,
+            "annotations": "Match Sculpted PanelHeader alignment, 12px horizontal inset, 6px control spacing and 24px icon targets. Server identity replaces selected-component identity. The second status line is needed for an external multi-server panel. Connecting/disconnected replace the status in place and disable live edits/save. Native window chrome supplies close; no duplicate close/dock/settings controls or empty More menu."
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": "fill",
+            "direction": "row",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": "fill",
+                "direction": "column",
+                "children": [
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 24,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Tweaks",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 22,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "› Appearance",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary",
+                        "annotations": "Lucide ChevronRight/ChevronDown disclosure; preserve expansion and group ordering during edits. This group hierarchy is required by useTweak metadata."
+                      },
+                      {
+                        "type": "text",
+                        "text": "1 modified",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "accent"
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 22,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "› Motion",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary",
+                        "annotations": "Lucide ChevronRight/ChevronDown disclosure; preserve expansion and group ordering during edits. This group hierarchy is required by useTweak metadata."
+                      },
+                      {
+                        "type": "text",
+                        "text": "1 modified",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "accent"
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 12,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 24,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Styles",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary"
+                      },
+                      {
+                        "type": "text",
+                        "text": "3 sites",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 30,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "Filter properties",
+                        "width": "fill",
+                        "height": 28,
+                        "cornerRadius": 5,
+                        "annotations": "Reuse Sculpted PropertyFilterInput: filter property paths, keep the input full width, and Enter focuses the first visible match. Applies to Styles, not generic tweak groups. Preserve the query across live updates and Save. Distinguish this text filter from the picked-site filter; if no properties match, retain the filter and show No matching properties.",
+                        "stroke": "overlay"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "2 picked sites",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "×",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide X, 16px (13px for row actions). Tooltip and accessible name: Show all style sites. Clears only the picked-site filter. Does not revert drafts, clear the property query, cancel picking, or change the global Save/Revert scope."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Required adaptation: selection narrows the inventory of style sites rather than becoming the sole inspected element. Use a quiet inline status, not a large banner or a new navigation mode."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 4,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 20,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "src/Card.tsrx",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Monospace source location. Reuse Sculpted’s quiet source typography. Group sites under one file label because multiple mounted sites may share the file."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "⌄ View",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "inline :34",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore View. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "padding",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "24",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "fill": "inset",
+                        "stroke": "accent"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore padding. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "gap · deleted",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "8",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Deleted property retains its source value until Save or Restore; use Sculpted’s struck-through name in implementation. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "fill": "inset",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore gap. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "opacity",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "dynamic",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Non-literal source expression: read only, reason available at the row. Do not fabricate a runtime value. Follow Sculpted’s disabled property-field presentation.",
+                        "fill": "inset",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "borderRadius",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "12",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Added property; restoring removes the unsaved addition. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "fill": "inset",
+                        "stroke": "accent"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore borderRadius. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "+ Add property",
+                        "width": 124,
+                        "height": 26,
+                        "cornerRadius": 5,
+                        "annotations": "Reuse Sculpted AddPropertyMenu: one labeled trigger opens an anchored searchable list, not a property-name/value form. Lucide Plus, 14px. Arrow keys select, Enter adds and focuses the new row’s value, Escape closes and restores trigger focus; use Sculpted’s Shift+A shortcut. Candidate names must be valid for the inline/bamboo site; preserve valid custom names through a create option. Use known property defaults when available, otherwise collect an explicit value before applying the addition."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 12,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 20,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "src/Toolbar.tsrx",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Monospace source location. Reuse Sculpted’s quiet source typography. Group sites under one file label because multiple mounted sites may share the file."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "⌄ toolbar",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "bamboo :18",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "text",
+                    "text": "Preview unavailable",
+                    "width": "hug",
+                    "height": 20,
+                    "role": "caption",
+                    "tone": "secondary",
+                    "annotations": "Bamboo live preview is unavailable, but the source site remains writable. Keep this local to the site; it is unrelated to saving or the connection."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "display",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "flex",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "×",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Trash2, 16px (13px for row actions). Tooltip and accessible name: Remove display. Match Sculpted’s subtle trailing remove-property action. Mark deleted and expose Restore until Save. The cross is a static glyph placeholder for the trash icon, not the final artwork."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "gap",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "12",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "×",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Trash2, 16px (13px for row actions). Tooltip and accessible name: Remove gap. Match Sculpted’s subtle trailing remove-property action. Mark deleted and expose Restore until Save. The cross is a static glyph placeholder for the trash icon, not the final artwork."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "+ Add property",
+                        "width": 124,
+                        "height": 26,
+                        "cornerRadius": 5,
+                        "annotations": "Reuse Sculpted AddPropertyMenu: one labeled trigger opens an anchored searchable list, not a property-name/value form. Lucide Plus, 14px. Arrow keys select, Enter adds and focuses the new row’s value, Escape closes and restores trigger focus; use Sculpted’s Shift+A shortcut. Candidate names must be valid for the inline/bamboo site; preserve valid custom names through a create option. Use known property defaults when available, otherwise collect an explicit value before applying the addition."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": "fill",
+                    "direction": "column",
+                    "children": []
+                  }
+                ],
+                "padding": {
+                  "x": 12,
+                  "y": 8
+                }
+              },
+              {
+                "type": "frame",
+                "width": 4,
+                "height": "fill",
+                "direction": "column",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "",
+                    "width": 3,
+                    "height": 120,
+                    "cornerRadius": 5,
+                    "fill": "overlay"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": "fill",
+                    "direction": "column",
+                    "children": []
+                  }
+                ],
+                "padding": {
+                  "y": 8
+                }
+              }
+            ],
+            "annotations": "Reuse Sculpted’s single scrolling body with fixed header. Preserve scroll through editing/filtering/saving; no independent row scroll regions. A slim scrollbar is represented explicitly. This example is scrolled to Styles; tweak groups are above the viewport. "
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": 66,
+            "direction": "column",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 18,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "4 unsaved · 1 off screen",
+                    "width": "fill",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "accent",
+                    "annotations": "Panel-specific addition for manual saving: count dirty tweaks + dirty style sites + unmounted dirty items, not property rows. Counts are global even when text/pick filters hide edits. After Save, clear markers/counts only from confirmed server state."
+                  },
+                  {
+                    "type": "text",
+                    "text": "● Connected",
+                    "width": "hug",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              },
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 28,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "⟲ Revert all",
+                    "width": 112,
+                    "height": 28,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide RotateCcw, 16px; retain Revert all label because the action includes filtered/off-screen tweaks and style drafts. Revert restores source values; no source write."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "rect",
+                    "label": "▣",
+                    "width": 28,
+                    "height": 28,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide Save, 16px. Tooltip/accessibility name: Save changes to source. Save writes all pending drafts directly with no diff preview or confirmation. Show Saving… in the summary until completion. Preserve editor focus, filters, expanded sites, and scroll position. Success: Saved N files, and dirty clears from server state. Failure: retain drafts and show file-specific errors above the footer; a partial failure never claims complete success. Review the resulting diff in existing developer tools and perform follow-up saves as needed.",
+                    "fill": "ink"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              }
+            ],
+            "padding": {
+              "x": 12,
+              "y": 8
+            },
+            "gap": 4,
+            "annotations": "Necessary difference from Sculpted autosave: a fixed, low-chrome footer for explicit Save/Revert and global pending work. Match Sculpted’s neutral action styling; no large primary text button, review view, or autosave implication. Save stays at the lower right. Busy/failure status is inline, not a modal."
+          }
+        ],
+        "annotations": "Design baseline: ~/dev/alloc/sculpted/src/ui/inspectorPanel.tsx (PanelHeader/source headings), src/ui/inspectorEditableTargets.tsx (property grid, filter and AddPropertyMenu), src/ui/inputs/rawValueInput.tsx (normal/changed/disabled fields), and src/ui/inspectorPanel.css (code type and icon targets). Reuse Sculpted’s design rather than inventing an alternate inspector language. Actual styling should match its white surface, neutral gray rules/text, restrained blue changed inputs, 13px body text, 12px monospace code labels/source paths, 6px field corners, 24px icon targets and quiet source sections. The wireframe tool fixes palette/type, so the exact colors and fonts are implementation annotations, not a new theme. Use inline native style props to express the same hierarchy; lack of CSS does not justify redesigning it. Keep only necessary adaptations: server identity/connection, native keep-on-top, mounted tweak/file/site grouping, generic number/boolean/text/color/select controls, pick-as-site-filter, site-wide revert, and an explicit Save footer. Sculpted’s autosave/Git-dirty semantics are not reused: these dirty fields mean unsaved drafts and clear on confirmed save. Do not add browser-only docking, component-layer navigation, Panda token catalogs, responsive/state lanes, source attachment or other unsupported features. Lucide icon choices follow the approved mapping. Glyph placeholders: ⚲ Pin; ⌖ SquareMousePointer; ▣ Save; ↶ Undo2; × Trash2 in property rows or X in filter clear; ⌄/› ChevronDown/ChevronRight; ⟲ RotateCcw; + Plus. The format has no icon/SVG node, so glyphs are symbolic. All icon controls require accessible names, keyboard focus and tooltips. Pin and Pick keep stable icons with visible pressed treatment. No application code is changed by this design proposal. Tweaks are collapsed while Styles is the current task. The prior two-site pick filter remains while picking is re-armed. Styles shows changed, deleted, dynamic and added properties with Sculpted-style contextual restore/remove controls."
+      }
+    },
+    {
+      "name": "Add property · searchable Sculpted popover",
+      "width": 380,
+      "height": 720,
+      "root": {
+        "type": "frame",
+        "width": "fill",
+        "height": "fill",
+        "direction": "column",
+        "children": [
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": 68,
+            "direction": "column",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 24,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "playground — :5200 ⌄",
+                    "width": "fill",
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Server selector occupies Sculpted’s component-selector position. Menu contains playground — :5200 and playground — :5202; retain port and optional root to distinguish servers. No credentials. Lucide ChevronDown. No server: waiting label and the existing start-server instruction in the body."
+                  },
+                  {
+                    "type": "rect",
+                    "label": "⌖",
+                    "width": 24,
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide SquareMousePointer, 16px (13px for row actions). Tooltip and accessible name: Pick element. Use Sculpted’s header Inspect location and stable icon. Pressed while picking; activate again to stop. Native-only client: disabled with Web app required. Picking chooses style sites rather than replacing the mounted tweak inventory."
+                  },
+                  {
+                    "type": "rect",
+                    "label": "⚲",
+                    "width": 24,
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide Pin, 16px (13px for row actions). Tooltip and accessible name: Keep on top. Native-only window state, on in these examples. Omit in web. This replaces browser docking/window actions, which do not apply to a standalone native window.",
+                    "fill": "accent"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              },
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 18,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "● Connected · web",
+                    "width": "fill",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  },
+                  {
+                    "type": "text",
+                    "text": "2 servers",
+                    "width": "hug",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              }
+            ],
+            "padding": {
+              "x": 12,
+              "y": 10
+            },
+            "gap": 6,
+            "annotations": "Match Sculpted PanelHeader alignment, 12px horizontal inset, 6px control spacing and 24px icon targets. Server identity replaces selected-component identity. The second status line is needed for an external multi-server panel. Connecting/disconnected replace the status in place and disable live edits/save. Native window chrome supplies close; no duplicate close/dock/settings controls or empty More menu."
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": "fill",
+            "direction": "row",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": "fill",
+                "direction": "column",
+                "children": [
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 24,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Styles",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary"
+                      },
+                      {
+                        "type": "text",
+                        "text": "3 sites",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 30,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "Filter properties",
+                        "width": "fill",
+                        "height": 28,
+                        "cornerRadius": 5,
+                        "annotations": "Reuse Sculpted PropertyFilterInput: filter property paths, keep the input full width, and Enter focuses the first visible match. Applies to Styles, not generic tweak groups. Preserve the query across live updates and Save. Distinguish this text filter from the picked-site filter; if no properties match, retain the filter and show No matching properties.",
+                        "stroke": "overlay"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "2 picked sites",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "×",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide X, 16px (13px for row actions). Tooltip and accessible name: Show all style sites. Clears only the picked-site filter. Does not revert drafts, clear the property query, cancel picking, or change the global Save/Revert scope."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Required adaptation: selection narrows the inventory of style sites rather than becoming the sole inspected element. Use a quiet inline status, not a large banner or a new navigation mode."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 4,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 20,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "src/Card.tsrx",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Monospace source location. Reuse Sculpted’s quiet source typography. Group sites under one file label because multiple mounted sites may share the file."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "⌄ View",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "inline :34",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore View. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "padding",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "24",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "fill": "inset",
+                        "stroke": "accent"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore padding. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "gap · deleted",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "8",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Deleted property retains its source value until Save or Restore; use Sculpted’s struck-through name in implementation. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "fill": "inset",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "↶",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Undo2, 16px (13px for row actions). Tooltip and accessible name: Restore gap. Match Sculpted’s trailing restore action. For a tweak or site, discard its pending override/draft. For a property, restore its source literal; for a draft-added property, remove that addition. Keep this 24px action column stable. A delete action for edited properties remains reachable through the same property-removal keyboard interaction as Sculpted (Mod+Backspace)."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "opacity",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "dynamic",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Non-literal source expression: read only, reason available at the row. Do not fabricate a runtime value. Follow Sculpted’s disabled property-field presentation.",
+                        "fill": "inset",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "+ Add property",
+                        "width": 124,
+                        "height": 26,
+                        "cornerRadius": 5,
+                        "annotations": "Reuse Sculpted AddPropertyMenu: one labeled trigger opens an anchored searchable list, not a property-name/value form. Lucide Plus, 14px. Arrow keys select, Enter adds and focuses the new row’s value, Escape closes and restores trigger focus; use Sculpted’s Shift+A shortcut. Candidate names must be valid for the inline/bamboo site; preserve valid custom names through a create option. Use known property defaults when available, otherwise collect an explicit value before applying the addition.",
+                        "fill": "inset"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": 320,
+                    "height": 148,
+                    "direction": "column",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "border",
+                        "width": "fill",
+                        "height": 28,
+                        "cornerRadius": 5,
+                        "annotations": "Focused property search, following Sculpted’s Filter properties… search field. Query is border. Search only candidates for this style site and offer valid custom names without pretending Panda-specific metadata exists.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": "fill",
+                        "height": 32,
+                        "direction": "row",
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "borderRadius",
+                            "width": "fill",
+                            "height": 18,
+                            "role": "caption",
+                            "tone": "primary"
+                          },
+                          {
+                            "type": "text",
+                            "text": "Corners",
+                            "width": "hug",
+                            "height": 18,
+                            "role": "caption",
+                            "tone": "secondary"
+                          }
+                        ],
+                        "align": "center",
+                        "padding": {
+                          "x": 8
+                        },
+                        "fill": "inset",
+                        "annotations": "Keyboard-active option. Enter adds borderRadius with a supported default, closes the popover, and focuses the new value field. If no default is known, collect its value before submitting."
+                      },
+                      {
+                        "type": "frame",
+                        "width": "fill",
+                        "height": 32,
+                        "direction": "row",
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "borderWidth",
+                            "width": "fill",
+                            "height": 18,
+                            "role": "caption",
+                            "tone": "primary"
+                          },
+                          {
+                            "type": "text",
+                            "text": "Border",
+                            "width": "hug",
+                            "height": 18,
+                            "role": "caption",
+                            "tone": "secondary"
+                          }
+                        ],
+                        "align": "center",
+                        "padding": {
+                          "x": 8
+                        }
+                      },
+                      {
+                        "type": "frame",
+                        "width": "fill",
+                        "height": 32,
+                        "direction": "row",
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "borderColor",
+                            "width": "fill",
+                            "height": 18,
+                            "role": "caption",
+                            "tone": "primary"
+                          },
+                          {
+                            "type": "text",
+                            "text": "Border",
+                            "width": "hug",
+                            "height": 18,
+                            "role": "caption",
+                            "tone": "secondary"
+                          }
+                        ],
+                        "align": "center",
+                        "padding": {
+                          "x": 8
+                        }
+                      }
+                    ],
+                    "padding": 6,
+                    "gap": 4,
+                    "fill": "surface",
+                    "stroke": "overlay",
+                    "cornerRadius": 6,
+                    "annotations": "Reuse Sculpted’s anchored property-selector popover: 320px maximum width, 6px padding, searchable results, 32px options, keyboard selection, and empty state. The wireframe format has no overlay positioning, so this static example lays out the open popover below its trigger; the proposed real UI overlays the content and does not push other rows. Do not introduce a separate editor page or modal."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 8,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 20,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "src/Toolbar.tsrx",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Monospace source location. Reuse Sculpted’s quiet source typography. Group sites under one file label because multiple mounted sites may share the file."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "› toolbar",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "bamboo :18",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": "fill",
+                    "direction": "column",
+                    "children": []
+                  }
+                ],
+                "padding": {
+                  "x": 12,
+                  "y": 8
+                }
+              },
+              {
+                "type": "frame",
+                "width": 4,
+                "height": "fill",
+                "direction": "column",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "",
+                    "width": 3,
+                    "height": 120,
+                    "cornerRadius": 5,
+                    "fill": "overlay"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": "fill",
+                    "direction": "column",
+                    "children": []
+                  }
+                ],
+                "padding": {
+                  "y": 8
+                }
+              }
+            ],
+            "annotations": "Reuse Sculpted’s single scrolling body with fixed header. Preserve scroll through editing/filtering/saving; no independent row scroll regions. A slim scrollbar is represented explicitly. This example is scrolled to Styles; tweak groups are above the viewport. "
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": 66,
+            "direction": "column",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 18,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "4 unsaved · 1 off screen",
+                    "width": "fill",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "accent",
+                    "annotations": "Panel-specific addition for manual saving: count dirty tweaks + dirty style sites + unmounted dirty items, not property rows. Counts are global even when text/pick filters hide edits. After Save, clear markers/counts only from confirmed server state."
+                  },
+                  {
+                    "type": "text",
+                    "text": "● Connected",
+                    "width": "hug",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              },
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 28,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "⟲ Revert all",
+                    "width": 112,
+                    "height": 28,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide RotateCcw, 16px; retain Revert all label because the action includes filtered/off-screen tweaks and style drafts. Revert restores source values; no source write."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "rect",
+                    "label": "▣",
+                    "width": 28,
+                    "height": 28,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide Save, 16px. Tooltip/accessibility name: Save changes to source. Save writes all pending drafts directly with no diff preview or confirmation. Show Saving… in the summary until completion. Preserve editor focus, filters, expanded sites, and scroll position. Success: Saved N files, and dirty clears from server state. Failure: retain drafts and show file-specific errors above the footer; a partial failure never claims complete success. Review the resulting diff in existing developer tools and perform follow-up saves as needed.",
+                    "fill": "ink"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              }
+            ],
+            "padding": {
+              "x": 12,
+              "y": 8
+            },
+            "gap": 4,
+            "annotations": "Necessary difference from Sculpted autosave: a fixed, low-chrome footer for explicit Save/Revert and global pending work. Match Sculpted’s neutral action styling; no large primary text button, review view, or autosave implication. Save stays at the lower right. Busy/failure status is inline, not a modal."
+          }
+        ],
+        "annotations": "Design baseline: ~/dev/alloc/sculpted/src/ui/inspectorPanel.tsx (PanelHeader/source headings), src/ui/inspectorEditableTargets.tsx (property grid, filter and AddPropertyMenu), src/ui/inputs/rawValueInput.tsx (normal/changed/disabled fields), and src/ui/inspectorPanel.css (code type and icon targets). Reuse Sculpted’s design rather than inventing an alternate inspector language. Actual styling should match its white surface, neutral gray rules/text, restrained blue changed inputs, 13px body text, 12px monospace code labels/source paths, 6px field corners, 24px icon targets and quiet source sections. The wireframe tool fixes palette/type, so the exact colors and fonts are implementation annotations, not a new theme. Use inline native style props to express the same hierarchy; lack of CSS does not justify redesigning it. Keep only necessary adaptations: server identity/connection, native keep-on-top, mounted tweak/file/site grouping, generic number/boolean/text/color/select controls, pick-as-site-filter, site-wide revert, and an explicit Save footer. Sculpted’s autosave/Git-dirty semantics are not reused: these dirty fields mean unsaved drafts and clear on confirmed save. Do not add browser-only docking, component-layer navigation, Panda token catalogs, responsive/state lanes, source attachment or other unsupported features. Lucide icon choices follow the approved mapping. Glyph placeholders: ⚲ Pin; ⌖ SquareMousePointer; ▣ Save; ↶ Undo2; × Trash2 in property rows or X in filter clear; ⌄/› ChevronDown/ChevronRight; ⟲ RotateCcw; + Plus. The format has no icon/SVG node, so glyphs are symbolic. All icon controls require accessible names, keyboard focus and tooltips. Pin and Pick keep stable icons with visible pressed treatment. No application code is changed by this design proposal. Reuse Sculpted’s property-selection workflow. The legacy freeform name/value composer is removed. The open popover is shown in static flow only because this format does not support positioned overlays."
+      }
+    },
+    {
+      "name": "After Save · same editor, no pending work",
+      "width": 380,
+      "height": 720,
+      "root": {
+        "type": "frame",
+        "width": "fill",
+        "height": "fill",
+        "direction": "column",
+        "children": [
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": 68,
+            "direction": "column",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 24,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "playground — :5200 ⌄",
+                    "width": "fill",
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Server selector occupies Sculpted’s component-selector position. Menu contains playground — :5200 and playground — :5202; retain port and optional root to distinguish servers. No credentials. Lucide ChevronDown. No server: waiting label and the existing start-server instruction in the body."
+                  },
+                  {
+                    "type": "rect",
+                    "label": "⌖",
+                    "width": 24,
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide SquareMousePointer, 16px (13px for row actions). Tooltip and accessible name: Pick element. Use Sculpted’s header Inspect location and stable icon. Pressed while picking; activate again to stop. Native-only client: disabled with Web app required. Picking chooses style sites rather than replacing the mounted tweak inventory."
+                  },
+                  {
+                    "type": "rect",
+                    "label": "⚲",
+                    "width": 24,
+                    "height": 24,
+                    "cornerRadius": 5,
+                    "annotations": "Lucide Pin, 16px (13px for row actions). Tooltip and accessible name: Keep on top. Native-only window state, on in these examples. Omit in web. This replaces browser docking/window actions, which do not apply to a standalone native window.",
+                    "fill": "accent"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              },
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 18,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "● Connected · web",
+                    "width": "fill",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  },
+                  {
+                    "type": "text",
+                    "text": "2 servers",
+                    "width": "hug",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              }
+            ],
+            "padding": {
+              "x": 12,
+              "y": 10
+            },
+            "gap": 6,
+            "annotations": "Match Sculpted PanelHeader alignment, 12px horizontal inset, 6px control spacing and 24px icon targets. Server identity replaces selected-component identity. The second status line is needed for an external multi-server panel. Connecting/disconnected replace the status in place and disable live edits/save. Native window chrome supplies close; no duplicate close/dock/settings controls or empty More menu."
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": "fill",
+            "direction": "row",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": "fill",
+                "direction": "column",
+                "children": [
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 24,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Tweaks",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 22,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "⌄ Appearance",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary",
+                        "annotations": "Lucide ChevronRight/ChevronDown disclosure; preserve expansion and group ordering during edits. This group hierarchy is required by useTweak metadata."
+                      },
+                      {
+                        "type": "text",
+                        "text": "3 entries",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "accent",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "frame",
+                        "width": 176,
+                        "height": 24,
+                        "direction": "row",
+                        "children": [
+                          {
+                            "type": "rect",
+                            "label": "",
+                            "width": 16,
+                            "height": 16,
+                            "cornerRadius": 5,
+                            "annotations": "Color swatch for #60a5fa; the wireframe palette is symbolic. Follow Sculpted’s swatch/value arrangement, retaining the current app’s hex-only editing capability.",
+                            "fill": "accent"
+                          },
+                          {
+                            "type": "rect",
+                            "label": "#60a5fa",
+                            "width": "fill",
+                            "height": 24,
+                            "cornerRadius": 5,
+                            "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Hex input; retain invalid intermediate input locally and expose validation at the field. No token catalog is implied by this example.",
+                            "stroke": "overlay"
+                          }
+                        ],
+                        "align": "center",
+                        "gap": 6
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "easing",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "ease-out ⌄",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Use the existing type-specific select, text field, or numeric stepper. Preserve numeric select option types; reject non-finite numeric input. Values and labels use Sculpted’s code typography.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "title",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "Hello, Octane",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Use the existing type-specific select, text field, or numeric stepper. Preserve numeric select option types; reject non-finite numeric input. Values and labels use Sculpted’s code typography.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 8,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 22,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "⌄ Motion",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary",
+                        "annotations": "Lucide ChevronRight/ChevronDown disclosure; preserve expansion and group ordering during edits. This group hierarchy is required by useTweak metadata."
+                      },
+                      {
+                        "type": "text",
+                        "text": "3 entries",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "duration",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "frame",
+                        "width": 176,
+                        "height": 24,
+                        "direction": "row",
+                        "children": [
+                          {
+                            "type": "frame",
+                            "width": "fill",
+                            "height": 20,
+                            "direction": "row",
+                            "children": [
+                              {
+                                "type": "rect",
+                                "label": "",
+                                "width": "fill",
+                                "height": 3,
+                                "cornerRadius": 5,
+                                "fill": "accent"
+                              },
+                              {
+                                "type": "rect",
+                                "label": "",
+                                "width": 7,
+                                "height": 12,
+                                "cornerRadius": 5,
+                                "fill": "accent"
+                              },
+                              {
+                                "type": "rect",
+                                "label": "",
+                                "width": 20,
+                                "height": 3,
+                                "cornerRadius": 5,
+                                "fill": "overlay"
+                              }
+                            ],
+                            "align": "center",
+                            "gap": 0,
+                            "annotations": "Existing bounded number control (0–1000, step 20). Retain slider plus exact number for generic useTweak numbers, which Sculpted’s CSS-only property editor does not cover."
+                          },
+                          {
+                            "type": "rect",
+                            "label": "280",
+                            "width": 48,
+                            "height": 24,
+                            "cornerRadius": 5,
+                            "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. ",
+                            "stroke": "overlay"
+                          }
+                        ],
+                        "align": "center",
+                        "gap": 6
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "enabled",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "frame",
+                        "width": 176,
+                        "height": 24,
+                        "direction": "row",
+                        "children": [
+                          {
+                            "type": "rect",
+                            "label": "● on",
+                            "width": 44,
+                            "height": 22,
+                            "cornerRadius": 5,
+                            "fill": "accent"
+                          },
+                          {
+                            "type": "text",
+                            "text": "true",
+                            "width": "fill",
+                            "height": 18,
+                            "role": "caption",
+                            "tone": "secondary",
+                            "align": "end"
+                          }
+                        ],
+                        "align": "center",
+                        "gap": 6
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "repeats",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Monospace code label, matching Sculpted property labels. Full label available when truncated."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "3                 ▴▾",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Use the existing type-specific select, text field, or numeric stepper. Preserve numeric select option types; reject non-finite numeric input. Values and labels use Sculpted’s code typography.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Reuse Sculpted grid proportions: flexible label, 176px value, 24px trailing action, 6px column gaps. Dirty is communicated by the field treatment and restore affordance; no extra gutter, row fill, or badge. Controls update the live app immediately; explicit Save is the source-write boundary."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 12,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 24,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Styles",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "label",
+                        "tone": "primary"
+                      },
+                      {
+                        "type": "text",
+                        "text": "3 sites",
+                        "width": "hug",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 30,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "Filter properties",
+                        "width": "fill",
+                        "height": 28,
+                        "cornerRadius": 5,
+                        "annotations": "Reuse Sculpted PropertyFilterInput: filter property paths, keep the input full width, and Enter focuses the first visible match. Applies to Styles, not generic tweak groups. Preserve the query across live updates and Save. Distinguish this text filter from the picked-site filter; if no properties match, retain the filter and show No matching properties.",
+                        "stroke": "overlay"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 4,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 20,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "src/Card.tsrx",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Monospace source location. Reuse Sculpted’s quiet source typography. Group sites under one file label because multiple mounted sites may share the file."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "⌄ View",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "inline :34",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "padding",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "24",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "×",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Trash2, 16px (13px for row actions). Tooltip and accessible name: Remove padding. Match Sculpted’s subtle trailing remove-property action. Mark deleted and expose Restore until Save. The cross is a static glyph placeholder for the trash icon, not the final artwork."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "gap",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "8",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Reuse Sculpted numeric stepping and finite/color/shorthand field interactions when the current site metadata can support them; retain raw literal input for unknown values. Do not imply Panda tokens or breakpoint lanes for sites that do not provide that metadata.",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "rect",
+                        "label": "×",
+                        "width": 24,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Lucide Trash2, 16px (13px for row actions). Tooltip and accessible name: Remove gap. Match Sculpted’s subtle trailing remove-property action. Mark deleted and expose Restore until Save. The cross is a static glyph placeholder for the trash icon, not the final artwork."
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "opacity",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Use Sculpted’s 12px code font and its property-name treatment. Preserve full property paths and explain read-only/deleted states accessibly."
+                      },
+                      {
+                        "type": "rect",
+                        "label": "dynamic",
+                        "width": 176,
+                        "height": 24,
+                        "cornerRadius": 5,
+                        "annotations": "Match Sculpted RawValueInput: 6px corners, 4px vertical/6px horizontal padding, neutral border and white background. Changed fields use the same subtle blue border/background as Sculpted (#93c5fd/#eff6ff); do not tint the entire row or add a dirty-marker column. Disabled fields use muted styling. The fixed wireframe palette is symbolic. Non-literal source expression: read only, reason available at the row. Do not fabricate a runtime value. Follow Sculpted’s disabled property-field presentation.",
+                        "fill": "inset",
+                        "stroke": "overlay"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Directly follow Sculpted property rows: flexible label / 176px input / 24px contextual restore-or-remove action with 6px gaps. No separate modified dot or full-row tint. Restore on changed rows also makes dirty state legible without relying only on blue."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "rect",
+                        "label": "+ Add property",
+                        "width": 124,
+                        "height": 26,
+                        "cornerRadius": 5,
+                        "annotations": "Reuse Sculpted AddPropertyMenu: one labeled trigger opens an anchored searchable list, not a property-name/value form. Lucide Plus, 14px. Arrow keys select, Enter adds and focuses the new row’s value, Escape closes and restores trigger focus; use Sculpted’s Shift+A shortcut. Candidate names must be valid for the inline/bamboo site; preserve valid custom names through a create option. Use known property defaults when available, otherwise collect an explicit value before applying the addition."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "› Text",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "inline :61",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 20,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "src/Toolbar.tsrx",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "annotations": "Monospace source location. Reuse Sculpted’s quiet source typography. Group sites under one file label because multiple mounted sites may share the file."
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 26,
+                    "direction": "row",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "› toolbar",
+                        "width": "fill",
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "primary",
+                        "annotations": "Sculpted-style source identity, with a disclosure needed for the multi-site inventory. Lucide ChevronDown/ChevronRight. Retain expansion after selection, input, and saving."
+                      },
+                      {
+                        "type": "text",
+                        "text": "bamboo :18",
+                        "width": 80,
+                        "height": 18,
+                        "role": "caption",
+                        "tone": "secondary",
+                        "align": "end"
+                      },
+                      {
+                        "type": "frame",
+                        "width": 24,
+                        "height": 24,
+                        "direction": "column",
+                        "children": []
+                      }
+                    ],
+                    "align": "center",
+                    "gap": 6,
+                    "annotations": "Use a plain source heading with a subtle top separator, not a card or a dirty-colored background. Preserve existing site-wide revert through the trailing restore icon. Read-only sites expose their source reason here and disable all edits. Source links may gain open-in-editor behavior only when supported by the target app."
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": "fill",
+                    "direction": "column",
+                    "children": []
+                  }
+                ],
+                "padding": {
+                  "x": 12,
+                  "y": 8
+                }
+              },
+              {
+                "type": "frame",
+                "width": 4,
+                "height": "fill",
+                "direction": "column",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "",
+                    "width": 3,
+                    "height": 120,
+                    "cornerRadius": 5,
+                    "fill": "overlay"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": "fill",
+                    "direction": "column",
+                    "children": []
+                  }
+                ],
+                "padding": {
+                  "y": 8
+                }
+              }
+            ],
+            "annotations": "Reuse Sculpted’s single scrolling body with fixed header. Preserve scroll through editing/filtering/saving; no independent row scroll regions. A slim scrollbar is represented explicitly. "
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "frame",
+            "width": "fill",
+            "height": 66,
+            "direction": "column",
+            "children": [
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 18,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "0 unsaved · Saved 3 files",
+                    "width": "fill",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary",
+                    "annotations": "Panel-specific addition for manual saving: count dirty tweaks + dirty style sites + unmounted dirty items, not property rows. Counts are global even when text/pick filters hide edits. After Save, clear markers/counts only from confirmed server state."
+                  },
+                  {
+                    "type": "text",
+                    "text": "● Connected",
+                    "width": "hug",
+                    "height": 18,
+                    "role": "caption",
+                    "tone": "secondary"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              },
+              {
+                "type": "frame",
+                "width": "fill",
+                "height": 28,
+                "direction": "row",
+                "children": [
+                  {
+                    "type": "rect",
+                    "label": "⟲ Revert all",
+                    "width": 112,
+                    "height": 28,
+                    "cornerRadius": 5,
+                    "annotations": "Disabled: no unsaved changes. Lucide RotateCcw, 16px; retain Revert all label because the action includes filtered/off-screen tweaks and style drafts. Revert restores source values; no source write.",
+                    "fill": "inset"
+                  },
+                  {
+                    "type": "frame",
+                    "width": "fill",
+                    "height": 28,
+                    "direction": "column",
+                    "children": []
+                  },
+                  {
+                    "type": "rect",
+                    "label": "▣",
+                    "width": 28,
+                    "height": 28,
+                    "cornerRadius": 5,
+                    "annotations": "Disabled: no unsaved changes. Lucide Save, 16px. Tooltip/accessibility name: Save changes to source. Save writes all pending drafts directly with no diff preview or confirmation. Show Saving… in the summary until completion. Preserve editor focus, filters, expanded sites, and scroll position. Success: Saved N files, and dirty clears from server state. Failure: retain drafts and show file-specific errors above the footer; a partial failure never claims complete success. Review the resulting diff in existing developer tools and perform follow-up saves as needed.",
+                    "fill": "overlay"
+                  }
+                ],
+                "align": "center",
+                "gap": 6
+              }
+            ],
+            "padding": {
+              "x": 12,
+              "y": 8
+            },
+            "gap": 4,
+            "annotations": "Necessary difference from Sculpted autosave: a fixed, low-chrome footer for explicit Save/Revert and global pending work. Match Sculpted’s neutral action styling; no large primary text button, review view, or autosave implication. Save stays at the lower right. Busy/failure status is inline, not a modal."
+          }
+        ],
+        "annotations": "Design baseline: ~/dev/alloc/sculpted/src/ui/inspectorPanel.tsx (PanelHeader/source headings), src/ui/inspectorEditableTargets.tsx (property grid, filter and AddPropertyMenu), src/ui/inputs/rawValueInput.tsx (normal/changed/disabled fields), and src/ui/inspectorPanel.css (code type and icon targets). Reuse Sculpted’s design rather than inventing an alternate inspector language. Actual styling should match its white surface, neutral gray rules/text, restrained blue changed inputs, 13px body text, 12px monospace code labels/source paths, 6px field corners, 24px icon targets and quiet source sections. The wireframe tool fixes palette/type, so the exact colors and fonts are implementation annotations, not a new theme. Use inline native style props to express the same hierarchy; lack of CSS does not justify redesigning it. Keep only necessary adaptations: server identity/connection, native keep-on-top, mounted tweak/file/site grouping, generic number/boolean/text/color/select controls, pick-as-site-filter, site-wide revert, and an explicit Save footer. Sculpted’s autosave/Git-dirty semantics are not reused: these dirty fields mean unsaved drafts and clear on confirmed save. Do not add browser-only docking, component-layer navigation, Panda token catalogs, responsive/state lanes, source attachment or other unsupported features. Lucide icon choices follow the approved mapping. Glyph placeholders: ⚲ Pin; ⌖ SquareMousePointer; ▣ Save; ↶ Undo2; × Trash2 in property rows or X in filter clear; ⌄/› ChevronDown/ChevronRight; ⟲ RotateCcw; + Plus. The format has no icon/SVG node, so glyphs are symbolic. All icon controls require accessible names, keyboard focus and tooltips. Pin and Pick keep stable icons with visible pressed treatment. No application code is changed by this design proposal. Same mounted editor after the three-file save succeeds and the server reports no remaining dirty work. Preserve values, layout and scroll; Save and Revert all disable until a new edit. The external diff workflow needs no extra panel UI."
+      }
+    }
+  ]
+}

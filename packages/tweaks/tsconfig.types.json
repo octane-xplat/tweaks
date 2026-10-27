@@ -6,7 +6,7 @@
 		"moduleResolution": "bundler",
 		"jsx": "preserve",
 		"moduleSuffixes": ["", ".web", ".native"],
-		"lib": ["ESNext", "DOM"],
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"declaration": true,
 		"emitDeclarationOnly": true,
 		"outDir": "types",

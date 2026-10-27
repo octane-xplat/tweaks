@@ -102,9 +102,12 @@ test('select/color/boolean validation', () => {
 test('dirty count includes unmountedDirty; revert/save payloads', () => {
 	const { model, transports } = setup()
 	const t = transports[0]
-	t.emit(stateMsg([entry({ dirty: true })], [
-		{ id: 'f#hidden', file: 'f', name: 'hidden', group: null, override: 2, value: 1 },
-	]))
+	t.emit(
+		stateMsg(
+			[entry({ dirty: true })],
+			[{ id: 'f#hidden', file: 'f', name: 'hidden', group: null, override: 2, value: 1 }],
+		),
+	)
 	assert.equal(model.dirtyCount(), 2)
 	model.revertAll()
 	model.save()
@@ -153,8 +156,12 @@ test('syncServers keeps current, follows restart by root, falls back to first', 
 		urls.push(u)
 		return new FakeTransport()
 	})
-	const s = (name: string, port: number, token: string, root = '/r') =>
-		({ url: `ws://127.0.0.1:${port}/__octane_tweaks`, token, name, root })
+	const s = (name: string, port: number, token: string, root = '/r') => ({
+		url: `ws://127.0.0.1:${port}/__octane_tweaks`,
+		token,
+		name,
+		root,
+	})
 	const A = s('app', 5200, 't1')
 	// First poll: connect to first entry.
 	assert.equal(model.syncServers([A]), A)
@@ -185,7 +192,9 @@ test('style dirty count, draft display, number coercion, add-name validation', (
 	const transport = () => transports[0]
 	model.onServerMessage(JSON.stringify({ ...stateMsg([]), styles: [STYLE_SITE] }))
 	assert.equal(model.dirtyCount(), 0)
-	model.onServerMessage(JSON.stringify({ ...stateMsg([]), styles: [{ ...STYLE_SITE, dirty: true }] }))
+	model.onServerMessage(
+		JSON.stringify({ ...stateMsg([]), styles: [{ ...STYLE_SITE, dirty: true }] }),
+	)
 	assert.equal(model.dirtyCount(), 1)
 
 	// draft display: draft.set wins over the source literal
@@ -193,9 +202,15 @@ test('style dirty count, draft display, number coercion, add-name validation', (
 	assert.equal(model.stylePropValue(site, ['padding']), '10')
 	assert.equal(model.stylePropValue(site, ['backgroundColor']), 'surface')
 	assert.equal(model.stylePropDeleted(site, ['padding']), false)
-	assert.equal(model.stylePropDeleted({ ...site, draft: { set: {}, delete: ['padding'] } }, ['padding']), true)
+	assert.equal(
+		model.stylePropDeleted({ ...site, draft: { set: {}, delete: ['padding'] } }, ['padding']),
+		true,
+	)
 	assert.deepEqual(model.styleAddedPaths(site), [])
-	assert.deepEqual(model.styleAddedPaths({ ...site, draft: { set: { marginTop: '8' }, delete: [] } }), ['marginTop'])
+	assert.deepEqual(
+		model.styleAddedPaths({ ...site, draft: { set: { marginTop: '8' }, delete: [] } }),
+		['marginTop'],
+	)
 
 	// number coercion: numeric original + parseable text -> number; else string
 	model.styleSet('style-1', ['fontSize'], '30')
@@ -215,18 +230,29 @@ test('style dirty count, draft display, number coercion, add-name validation', (
 	// restore sends the original literal
 	model.styleRestore('style-1', ['backgroundColor'])
 	assert.deepEqual(JSON.parse(transport().sent.at(-1)), {
-		type: 'styleSet', id: 'style-1', path: ['backgroundColor'], value: 'surface',
+		type: 'styleSet',
+		id: 'style-1',
+		path: ['backgroundColor'],
+		value: 'surface',
 	})
 })
 
 const STYLE_SITE = {
-	id: 'style-1', kind: 'bamboo', file: 'src/App.style.ts', line: 5, label: 'card',
+	id: 'style-1',
+	kind: 'bamboo',
+	file: 'src/App.style.ts',
+	line: 5,
+	label: 'card',
 	properties: [
 		{ path: ['padding'], value: '6', editable: true },
 		{ path: ['backgroundColor'], value: 'surface', editable: true },
 		{ path: ['fontSize'], value: 24, editable: true },
 	],
-	writable: true, draft: { set: {}, delete: [] }, dirty: false, mountedBy: ['app'], preview: 'live',
+	writable: true,
+	draft: { set: {}, delete: [] },
+	dirty: false,
+	mountedBy: ['app'],
+	preview: 'live',
 } as never
 
 test('save notifies listeners and flips saving', () => {
@@ -238,6 +264,53 @@ test('save notifies listeners and flips saving', () => {
 	assert.equal(model.saveResult, null)
 	assert.equal(notified, 1)
 	assert.ok(transports[0].sent.some((m) => JSON.parse(m).type === 'save'))
+})
+
+test('switching servers detaches the old transport and clears selection state', () => {
+	const { model, transports } = setup()
+	transports[0].emit(stateMsg([entry({})]))
+	model.pickFilter = ['old-site']
+	model.connect({ ...SERVER, name: 'second', url: 'ws://127.0.0.1:10/__octane_tweaks' })
+	assert.equal(transports[0].onmessage, null)
+	assert.equal(transports[0].onclose, null)
+	assert.equal(model.pickFilter, null)
+	assert.equal(model.entries.length, 0)
+	assert.equal(model.clients.length, 0)
+	assert.equal(model.status, 'connecting')
+	transports[1].open()
+	assert.equal(model.status, 'connected')
+	model.disconnect()
+})
+
+test('restoring an added style property removes its draft addition', () => {
+	const { model, transports } = setup()
+	transports[0].emit(
+		stateMsg(
+			[],
+			[],
+			[{ ...STYLE_SITE, draft: { set: { opacity: '0.5' }, delete: [] }, dirty: true }],
+		),
+	)
+	model.styleRestore('style-1', ['opacity'])
+	assert.deepEqual(JSON.parse(transports[0].sent.at(-1)!), {
+		type: 'styleDelete',
+		id: 'style-1',
+		path: ['opacity'],
+	})
+	model.disconnect()
+})
+
+test('a lost save connection releases busy state without claiming success', () => {
+	const { model, transports } = setup()
+	transports[0].open()
+	transports[0].emit(stateMsg([entry({ dirty: true })]))
+	model.save()
+	transports[0].close()
+	assert.equal(model.saving, false)
+	assert.equal(model.saveResult?.ok, false)
+	assert.match(model.saveResult!.errors[0].message, /Check source before retrying/)
+	assert.equal(model.dirtyCount(), 1)
+	model.disconnect()
 })
 
 test('save preview: request sends savePreview, response shows diff, confirm/cancel', () => {

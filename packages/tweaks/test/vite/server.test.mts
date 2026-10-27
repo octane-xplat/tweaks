@@ -344,6 +344,25 @@ test('styleSet/styleDelete drafts, validation, mounted styles in state, revert',
 	})
 	assert.equal(states.at(-1).styles.find((s: { id: string }) => s.id === siteId).dirty, true)
 
+	// Delete after editing must remove the property, not merely undo the edit.
+	panel.send(JSON.stringify({ type: 'styleDelete', id: siteId, path: ['padding'] }))
+	await new Promise((r) => setTimeout(r, 60))
+	assert.ok(valuesMsgs.at(-1).styles[siteId].delete.includes('padding'))
+	assert.equal(valuesMsgs.at(-1).styles[siteId].set.padding, undefined)
+
+	// Restore is a styleSet of the source literal; it must clear deletion too.
+	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: ['padding'], value: 16 }))
+	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: ['borderRadius'], value: 8 }))
+	await new Promise((r) => setTimeout(r, 60))
+	assert.equal(states.at(-1).styles.find((s: { id: string }) => s.id === siteId).dirty, false)
+
+	// Restoring a draft addition drops it without deleting a source property.
+	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: ['opacity'], value: '0.5' }))
+	panel.send(JSON.stringify({ type: 'styleDelete', id: siteId, path: ['opacity'] }))
+	await new Promise((r) => setTimeout(r, 60))
+	assert.equal(states.at(-1).styles.find((s: { id: string }) => s.id === siteId).dirty, false)
+	panel.send(JSON.stringify({ type: 'styleSet', id: siteId, path: ['padding'], value: 24 }))
+
 	// Revert the site.
 	panel.send(JSON.stringify({ type: 'revert', ids: [siteId] }))
 	await new Promise((r) => setTimeout(r, 60))

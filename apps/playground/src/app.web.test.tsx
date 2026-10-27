@@ -8,7 +8,7 @@ it('updates the counter when its button is pressed', async () => {
 	document.body.append(container)
 	const root = createRoot(container)
 	try {
-		root.render(<App />)
+		root.render(App, {})
 		const value = () => container.querySelector('[data-testid="counter.value"]')?.textContent
 		await vi.waitFor(() => expect(value()).toBe('0'))
 		container.querySelector<HTMLElement>('[data-testid="counter.increment"]')!.click()

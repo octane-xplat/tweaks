@@ -64,5 +64,6 @@ Bamboo preview compiles drafts through `loadConfigAndCreateContext` in-memory
 click-to-pick (`state.picking`; panel filter via `pickFilter`). Protocol v4
 adds `savePreview`: the server runs the same `planSave` the real Save uses and
 returns a capped per-file unified diff (`src/vite/diff.ts` renders hunks from
-the plan's splices). The panel's Save button opens the diff (Confirm → `save`,
-Cancel returns); a `state` change while the preview is open marks it stale.
+the plan's splices). This remains an optional protocol capability; the desktop
+panel saves directly and leaves diff review to the developer's existing tools.
+The desktop panel imports shared CSS stylesheets on both AppKit and web.

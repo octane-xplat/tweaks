@@ -24,12 +24,38 @@ AppKit renderer, JSC host) and in a browser (used for e2e).
   toggle is hidden on web.
 - `src/App.tsrx` — shared panel UI (`@octane-xplat/ui` components with macOS
   leaves; state via `createStore`/`useStore` from `@octane-xplat/ui/data`).
+- `src/styles.ts` + `src/panel.css` — shared theme imports and Sculpted-style
+  panel layout. `xplatMacOS` registers the stylesheets on AppKit; Vite loads
+  the same styles on web. Selected Lucide SVGs are registered in `src/icons.ts`
+  (attribution in `LUCIDE-LICENSE`).
+- `src/use-panel-content.macos.ts` — keeps the AppKit scroll document sized
+  to its rendered rows, including after filtering and disclosure changes.
 - `src/main.macos.ts` — window creation (~380×720, "Octane Tweaks"), root
   mount/unmount, terminate on last window close, `TWEAKS_PANEL_SELFTEST` hook.
 - `src/main.web.tsrx` + `index.html` — web build entry.
 - `link-host-deps.mjs` — postinstall that materializes `app/node_modules/
   {vite,octane,@nativescript/macos-node-api}` symlinks (the CLI resolves those
   literally; pnpm's hoisted linker doesn't create member dep dirs).
+
+## Editing
+
+The header chooses the dev server and toggles web click-to-pick. macOS also
+has a keep-on-top toggle. Tweaks retain their named groups; style sites are
+grouped by file and expand in place. **Filter properties** narrows style rows;
+Enter focuses the first matching input. The picked-site filter has a separate
+clear action and never changes Save's scope.
+
+Changed fields use Sculpted's blue field treatment and a restore action.
+**Add property** opens a searchable picker; known properties start with a
+literal default and focus the new value field. Custom names collect a value
+before being added. Read-only and dynamic properties remain visible.
+
+The Save icon writes all pending changes directly to source, including
+filtered and unmounted entries. It keeps the editor open and reports the
+result in the footer. Inspect the resulting diff in your editor or Git, then
+make further edits and save again as needed. Revert all discards pending
+overrides and style drafts; it does not write source. There is no save preview
+or confirmation screen in the desktop panel.
 
 ## Run
 
@@ -82,7 +108,7 @@ pnpm --filter @octane-xplat/tweaks-desktop build        # packaged .app + dmg �
   dylib via `xplat.macos.prebuiltLibraries` and the CLI bootstrap dlopens it,
   so the env var is unused there. **Packaged .app under published packages
   lays out empty** until the renderer ships the dylib.
-- **No color picker in `@octane-xplat/ui`** — hex TextInput + swatch only.
+- The panel's tweak color input uses a hex TextInput and swatch.
 
 ## Verified / limits
 
@@ -92,8 +118,8 @@ pnpm --filter @octane-xplat/tweaks-desktop build        # packaged .app + dmg �
   The Styles section renders in the AppKit view tree (styleSet travels the
   same NWConnection transport).
 - NOT verified: OS-level input on AppKit controls (clicking the native
-  slider/switch), keep-on-top effect, visual appearance (no stylesheets on
-  AppKit — inline props only).
+  slider/switch), keep-on-top effect, and visual appearance. AppKit supports
+  the shared stylesheets; screenshots are not part of verification here.
 - Known gaps in the framework/bridge: `NSURLSessionWebSocketTask` metadata
   absent (worked around with NWConnection); `xplat dev macos`'s
   `app/node_modules/...` checks assume isolated-layout node_modules

@@ -221,6 +221,8 @@ export class TweaksServer {
 			}
 			const draft = this.styleDrafts.get(message.id) ?? { set: {}, delete: [] }
 			draft.set[message.path.join('.')] = message.value
+			// Setting a deleted property is also the panel's Restore operation.
+			draft.delete = draft.delete.filter((key) => key !== message.path.join('.'))
 			this.styleDrafts.set(message.id, draft)
 			await this.refreshStyleCompiles()
 			void this.asyncBroadcastValues()
@@ -243,8 +245,10 @@ export class TweaksServer {
 				return
 			}
 			const d = draft ?? { set: {}, delete: [] }
-			if (d.set[key!] !== undefined) delete d.set[key!]
-			else if (!d.delete.includes(key!)) d.delete.push(key!)
+			delete d.set[key!]
+			// Deleting a source property removes it even after an edit. A draft
+			// addition has no source row to delete: dropping its set is enough.
+			if (existing?.editable && !d.delete.includes(key!)) d.delete.push(key!)
 			this.styleDrafts.set(message.id, d)
 			await this.refreshStyleCompiles()
 			void this.asyncBroadcastValues()
