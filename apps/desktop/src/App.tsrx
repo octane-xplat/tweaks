@@ -854,7 +854,16 @@ function PanelContent() @{
 							accessibilityLabel="Filter properties"
 							onChange={setQuery}
 							onSubmit={() => {
-								inputs.current.values().next().value?.focus()
+								// The map can hold a handle whose row already unmounted —
+								// focus() on it throws, so take the first live handle.
+								for (const [key, handle] of inputs.current) {
+									try {
+										handle.focus()
+										break
+									} catch {
+										inputs.current.delete(key)
+									}
+								}
 							}}
 						/>
 						{model.pickFilter ? (
