@@ -26,8 +26,8 @@ AppKit renderer, JSC host) and in a browser (used for e2e).
   leaves; state via `createStore`/`useStore` from `@octane-xplat/ui/data`).
 - `src/styles.ts` + `src/panel.css` — shared theme imports and Sculpted-style
   panel layout. `xplatMacOS` registers the stylesheets on AppKit; Vite loads
-  the same styles on web. Selected Lucide SVGs are registered in `src/icons.ts`
-  (attribution in `LUCIDE-LICENSE`).
+  the same styles on web. Selected Heroicons SVGs are registered in `src/icons.ts`
+  (attribution in `HEROICONS-LICENSE`).
 - `src/use-panel-content.macos.ts` — keeps the AppKit scroll document sized
   to its rendered rows, including after filtering and disclosure changes.
 - `src/main.macos.ts` — window creation (~380×720, "Octane Tweaks"), root
