@@ -417,6 +417,9 @@ try {
 			width: el.getBoundingClientRect().width,
 			icons: el.querySelectorAll('svg').length,
 			sliderWidth: el.querySelector('.panel-slider').getBoundingClientRect().width,
+			// chrome.css is the only source of `.vx-slider-fill` background
+			// (var(--color-primary)); null without the import.
+			sliderFill: getComputedStyle(el.querySelector('.vx-slider-fill')).backgroundColor,
 		}
 	})
 
@@ -426,7 +429,8 @@ try {
 		layout.footerBottom > 721 ||
 		layout.footerBottom < 680 ||
 		layout.icons < 4 ||
-		layout.sliderWidth < 60
+		layout.sliderWidth < 60 ||
+		layout.sliderFill !== 'rgb(0, 100, 224)'
 	) {
 		throw new Error(`panel styles/layout incorrect: ${JSON.stringify(layout)}`)
 	}
