@@ -2,6 +2,7 @@
 *.dmg
 *.tsbuildinfo
 /links/octane-xplat
+.release-notes.md
 apps/desktop/artifacts/
 apps/playground/src/styled-system/
 artifacts/

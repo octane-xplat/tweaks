@@ -1,0 +1,379 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Release channel to attempt
+        type: choice
+        options: [stable, nightly]
+        default: stable
+
+permissions:
+  contents: read
+
+jobs:
+  # A completed main CI run supplies the channel: its evidence gates nightly
+  # publication and the stable release. Stable releases arrive through the
+  # release pull request — its merge commit is "pending" until its tag
+  # exists — and publish once the same tree carried Stable CI evidence, or
+  # after this run qualifies it inline.
+  gate:
+    name: Resolve release channel
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' &&
+        inputs.track == 'stable' &&
+        github.ref == 'refs/heads/main')
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      channel: ${{ steps.evidence.outputs.channel }}
+      sha: ${{ steps.evidence.outputs.sha }}
+      release_pending: ${{ steps.pending.outputs.pending }}
+      release_state: ${{ steps.pending.outputs.state }}
+      # An unfinished publication resumes from the tagged commit; anything
+      # else publishes the CI-tested sha.
+      release_sha: >-
+        ${{ steps.pending.outputs.state == 'unpublished' && steps.pending.outputs.tag_sha ||
+          steps.evidence.outputs.sha }}
+      version: ${{ steps.pending.outputs.version }}
+      tag: ${{ steps.pending.outputs.tag }}
+      # A tag is only pushed after qualification, so 'unpublished' is already
+      # qualified; 'untagged' still needs stable evidence or the qualify job.
+      qualified: >-
+        ${{ steps.qualification.outputs.channel == 'stable' ||
+          steps.pending.outputs.state == 'unpublished' }}
+    # The revision CI actually tested — publish must consume evidence for
+    # this sha and build the tested code, not whatever main has moved to.
+    env:
+      TESTED_SHA: >-
+        ${{ github.event_name == 'workflow_run' &&
+            github.event.workflow_run.head_sha ||
+            github.sha }}
+      CI_RUN_ID: ${{ github.event.workflow_run.id || '' }}
+    steps:
+      - name: Checkout the tested revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.TESTED_SHA }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          # No pnpm in this job — keep the package-manager cache off.
+          package-manager-cache: false
+
+      - name: Verify CI release evidence
+        id: evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          node scripts/verify-release-evidence.ts verify --track ci
+          --sha "$TESTED_SHA" ${CI_RUN_ID:+--run-id "$CI_RUN_ID"}
+
+      - name: Check for a pending merged release
+        if: steps.evidence.outputs.channel == 'ci'
+        id: pending
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/release-version.ts pending tweaks >> "$GITHUB_OUTPUT"
+
+      # A merged release tree that already passed Stable CI on the release PR
+      # publishes immediately; `channel=none` here is expected and queues the
+      # qualify job below instead of failing. Only an untagged release needs
+      # the lookup — a pushed tag implies qualification already ran.
+      - name: Verify stable qualification for this tree
+        if: steps.pending.outputs.state == 'untagged'
+        id: qualification
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          node scripts/verify-release-evidence.ts verify --track stable
+          --tree "$(git rev-parse "$TESTED_SHA^{tree}")"
+
+  # A merged release commit whose tree lacks Stable CI evidence qualifies
+  # inline: the same lanes run through workflow_call on the merged sha.
+  qualify:
+    name: Qualify the merged tree
+    needs: gate
+    if: >-
+      needs.gate.outputs.channel == 'ci' &&
+      needs.gate.outputs.release_pending == 'true' &&
+      needs.gate.outputs.qualified != 'true'
+    concurrency:
+      group: release-qualify-${{ needs.gate.outputs.tag }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    uses: ./.github/workflows/stable.yml
+    with:
+      sha: ${{ needs.gate.outputs.release_sha }}
+
+  # The GitHub Release is the completion marker: the tag is pushed before
+  # publish, so "tag exists, release missing" means an unfinished publication.
+  # This job resumes it — pnpm skips the version when it did reach npm, and
+  # release creation is skipped when the release already exists. The release
+  # commit already bumped the manifest and consumed the notes — this job tags
+  # the tested revision, publishes, and queues the next release PR.
+  publish:
+    name: Publish @octane-xplat/tweaks
+    needs: [gate, qualify]
+    runs-on: ubuntu-latest
+    if: >-
+      always() &&
+      needs.gate.outputs.channel == 'ci' &&
+      needs.gate.outputs.release_pending == 'true' &&
+      (needs.gate.outputs.qualified == 'true' || needs.qualify.result == 'success')
+    concurrency:
+      group: release-tweaks
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      id-token: write
+      actions: write
+    env:
+      TESTED_SHA: ${{ needs.gate.outputs.release_sha }}
+      VERSION: ${{ needs.gate.outputs.version }}
+      TAG: ${{ needs.gate.outputs.tag }}
+    steps:
+      - name: Require release credential
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Set RELEASE_TOKEN (fine-grained PAT: Contents, Pull requests, and Workflows read/write) for this repository; see AGENTS.md."
+            exit 1
+          fi
+
+      - name: Checkout the tested revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.TESTED_SHA }}
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      # Pending was checked before qualification ran. A tag pointing at a
+      # different commit means another release owns it; a tag at TESTED_SHA
+      # means an earlier attempt published it — continue so failed steps can
+      # retry (peel annotated tags when comparing).
+      - name: Confirm the release is unpublished
+        id: unpublished
+        run: |
+          set -euo pipefail
+          remote="$(git ls-remote --tags origin "refs/tags/$TAG" "refs/tags/$TAG^{}")"
+          commit="$(echo "$remote" | grep '\^{}$' | awk '{print $1}' || true)"
+          commit="${commit:-$(echo "$remote" | head -1 | awk '{print $1}')}"
+          if [ -n "$commit" ] && [ "$commit" != "$TESTED_SHA" ]; then
+            echo "::notice::$TAG already exists on origin at $commit — another release owns this tag; skipping."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif [ "$commit" = "$TESTED_SHA" ]; then
+            echo "tagged=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup pnpm
+        if: steps.unpublished.outputs.exists != 'true'
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        if: steps.unpublished.outputs.exists != 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        if: steps.unpublished.outputs.exists != 'true'
+        run: pnpm install --frozen-lockfile
+
+      # Check before tagging or publishing; npm still authorizes every actual
+      # publish. This probes the OIDC exchange — the package needs a trusted
+      # publisher for octane-xplat/tweaks + release.yml first.
+      - name: Verify npm trusted publishing
+        if: steps.unpublished.outputs.exists != 'true'
+        run: node scripts/check-trusted-publishers.ts
+
+      # Checkout persists the RELEASE_TOKEN credential, so this tag push —
+      # which may carry workflow-file changes GITHUB_TOKEN cannot push —
+      # needs no credential override.
+      - name: Tag the release
+        if: >-
+          steps.unpublished.outputs.exists != 'true' &&
+          steps.unpublished.outputs.tagged != 'true'
+        run: |
+          git tag "$TAG" "$TESTED_SHA"
+          git push origin "$TAG"
+
+      # pnpm publish (not npm): publishConfig export remapping and workspace:*
+      # rewriting are pnpm behaviors. No NODE_AUTH_TOKEN/NPM_TOKEN is set —
+      # pnpm mints per-package tokens from the OIDC id token via npm's trusted
+      # publishing exchange and attaches provenance automatically. Reruns
+      # rely on recursive publish skipping versions already on the registry.
+      - name: Publish to npm
+        if: steps.unpublished.outputs.exists != 'true'
+        run: pnpm -r publish --access public --no-git-checks --provenance
+
+      # Notes are generated before the tag existed locally or after it was
+      # pushed — the notes script excludes the target tag from its baseline
+      # either way. A rerun skips this once the release already exists.
+      - name: Create GitHub Release
+        if: steps.unpublished.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/release-notes.ts notes tweaks "$VERSION" > .release-notes.md
+          gh release view "$TAG" > /dev/null 2>&1 || \
+            gh release create "$TAG" --title "$TAG" --notes-file .release-notes.md
+
+      - name: Queue the next release PR
+        if: steps.unpublished.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run release-pr.yml --ref main
+
+  # The scheduled nightly resolves the newest green main CI revision, then
+  # decides whether publishable files changed since the published nightly.
+  nightly-gate:
+    name: Resolve nightly release
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'schedule' ||
+        (github.event_name == 'workflow_dispatch' && inputs.track == 'nightly')) &&
+      github.ref == 'refs/heads/main' &&
+      github.repository == 'octane-xplat/tweaks'
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.ci.outputs.sha }}
+      publish: ${{ steps.decision.outputs.publish }}
+      version: ${{ steps.decision.outputs.version }}
+    steps:
+      - name: Find the newest green main CI run
+        id: ci
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          runs="repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=main&event=push&status=success&per_page=1"
+          id="$(gh api "$runs" --jq '.workflow_runs[0].id // empty')"
+          sha="$(gh api "$runs" --jq '.workflow_runs[0].head_sha // empty')"
+          if [ -z "$id" ] || [ -z "$sha" ]; then
+            echo "::error::no successful push CI run on main — cannot decide a nightly"
+            exit 1
+          fi
+          echo "newest green main CI run: $id at $sha"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          # No pnpm in this job — keep the package-manager cache off.
+          package-manager-cache: false
+
+      - name: Verify CI release evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          node scripts/verify-release-evidence.ts verify --track ci
+          --sha "${{ steps.ci.outputs.sha }}" --run-id "${{ steps.ci.outputs.id }}"
+
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Decide whether to publish a nightly
+        id: decision
+        run: |
+          set -o pipefail
+          node scripts/release-nightly.ts "${{ steps.ci.outputs.sha }}" | tee -a "$GITHUB_OUTPUT"
+
+  # Nightly channel: one prerelease per day when publishable files changed.
+  # Nothing commits to main and the `latest` dist-tag is untouched. This job
+  # alone owns the moving `nightly` git tag and GitHub prerelease.
+  nightly:
+    name: Publish nightly
+    needs: nightly-gate
+    runs-on: ubuntu-latest
+    if: needs.nightly-gate.outputs.publish == 'true'
+    concurrency:
+      group: release-nightly
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      TESTED_SHA: ${{ needs.nightly-gate.outputs.sha }}
+      VERSION: ${{ needs.nightly-gate.outputs.version }}
+    steps:
+      - name: Require release credential
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Set RELEASE_TOKEN (fine-grained PAT: Contents, Pull requests, and Workflows read/write) for this repository; see AGENTS.md."
+            exit 1
+          fi
+
+      - name: Checkout the tested revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.TESTED_SHA }}
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Check before any version bumps or publishes; npm still authorizes
+      # every actual publish.
+      - name: Verify npm trusted publishing
+        run: node scripts/check-trusted-publishers.ts
+
+      # `g<sha>` keeps the prerelease identifier alphanumeric — a bare sha
+      # prefix can be all digits with a leading zero, which is invalid semver.
+      - name: Bump versions (nightly)
+        run: node scripts/bump-versions.ts "$VERSION"
+
+      - name: Publish nightly to npm
+        run: pnpm -r publish --access public --no-git-checks --provenance --tag nightly
+
+      # Checkout persists the RELEASE_TOKEN credential — retagging a workflow
+      # change requires Workflows: write, which GITHUB_TOKEN cannot hold.
+      - name: Move the nightly tag and prerelease
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          git tag -f nightly "$TESTED_SHA"
+          git push --force origin refs/tags/nightly
+          gh release delete nightly --yes 2>/dev/null || true
+          gh release create nightly --title nightly --prerelease \
+            --notes "Nightly prerelease of ${TESTED_SHA} — install with \`pnpm add @octane-xplat/tweaks@nightly\` (published as $VERSION)."

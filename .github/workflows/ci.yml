@@ -1,11 +1,16 @@
-name: checks
+name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
 
-permissions: {}
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   checks:
@@ -22,3 +27,29 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm build
+
+  # Completing this workflow records ci evidence: release.yml gates the
+  # stable publish and the nightly schedule on it.
+  evidence:
+    runs-on: ubuntu-latest
+    needs: checks
+    if: always() && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          # No pnpm in this job — keep the package-manager cache off.
+          package-manager-cache: false
+      - name: Record CI evidence
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: >-
+          node scripts/verify-release-evidence.ts record --track ci
+          --jobs "$JOB_RESULTS" --sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ci-evidence-ci-${{ github.sha }}
+          path: .ci-evidence/ci-evidence.json
+          if-no-files-found: error
+          retention-days: 90

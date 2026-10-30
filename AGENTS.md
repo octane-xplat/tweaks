@@ -67,3 +67,46 @@ returns a capped per-file unified diff (`src/vite/diff.ts` renders hunks from
 the plan's splices). This remains an optional protocol capability; the desktop
 panel saves directly and leaves diff review to the developer's existing tools.
 The desktop panel imports shared CSS stylesheets on both AppKit and web.
+
+## Releases
+
+`@octane-xplat/tweaks` publishes from CI via npm trusted publishing (OIDC, no
+npm tokens). Modeled on octane-xplat/octane-xplat's flow; same mechanics,
+single package.
+
+- `ci.yml` (`CI`): fast checks on PRs and main pushes; a green main push
+  records a `ci-evidence-ci-<sha>` artifact that gates everything below.
+- `release-pr.yml`: keeps a draft `release/tweaks` PR rebuilt from main after
+  every push — Conventional Commit version inference over
+  `packages/tweaks/**` (`feat:` minor, `fix:`/`perf:`/`refactor:`/`revert:`
+  patch, `!`/`BREAKING CHANGE:` breaking), manifest bump, generated notes.
+  Marking the PR ready runs `stable.yml` (pack smoke + both Playwright e2e
+  lanes, evidence keyed by tree hash). Merging ships the release.
+- `release.yml`: on each green main CI run, publishes a merged release —
+  immediately if its tree is already qualified, else after running
+  `stable.yml` inline on the merge commit. Also publishes
+  `0.0.0-nightly.g<sha7>` on a daily schedule under npm's `nightly` dist-tag
+  when publishable paths changed since the published nightly.
+- The GitHub Release is the completion marker: a tag without its release is
+  an unfinished publish, resumed from the tag on the next green run. Between
+  merge and tag the release is pending and the release PR is not rebuilt.
+- `packages/tweaks` version `0.0.0` means "never released — nothing pending."
+  Only the release workflow sets a real version (on the release branch); do
+  not bump it by hand — a nonzero untagged version reads as a merged release
+  awaiting publication and ships on the next green main run.
+- Release notes are generated from commits since the previous `v*` tag (no
+  `.changelog` convention); `pnpm test` covers the release scripts.
+- `test:ios`/`test:android` device verification stays local — no simulator or
+  emulator lanes run on hosted runners.
+- Pushes, tags, and PR writes use the `RELEASE_TOKEN` secret (fine-grained
+  PAT: Contents, Pull requests, Workflows read/write) so `pull_request`
+  workflows trigger.
+
+Manual bootstrap before the first publish (one-time, needs an npm maintainer
+token): publish a minimal `0.0.1` stub under the final name —
+`npm publish <stub-dir> --access public` — then bind the trusted publisher:
+
+```sh
+npm trust github @octane-xplat/tweaks --file release.yml \
+  --repository octane-xplat/tweaks --allow-publish --allow-stage-publish
+```

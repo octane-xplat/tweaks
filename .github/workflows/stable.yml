@@ -1,0 +1,137 @@
+name: Stable CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+  workflow_call:
+    inputs:
+      sha:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  # The release PR qualifies only its newest head; called runs qualify the
+  # exact sha release.yml verified.
+  group: >-
+    ${{ github.event_name == 'pull_request' &&
+      format('stable-ci-pr-{0}', github.event.pull_request.number) ||
+      format('stable-ci-{0}', inputs.sha) }}
+  cancel-in-progress: true
+
+env:
+  # Pull requests test their head commit — not the merge ref — so evidence can
+  # bind to the exact tree a later merge publishes.
+  TESTED_SHA: ${{ inputs.sha || github.event.pull_request.head.sha }}
+
+jobs:
+  # Qualification lanes exist for the bot-maintained release PR. On ordinary
+  # pull requests every job is skipped; under workflow_call the caller's
+  # event name is not pull_request, so the lanes run unconditionally.
+  # Device verification (test:ios/test:android) stays local — it needs
+  # simulator/emulator hosts, not hosted runners.
+  pack-smoke:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.ref == 'release/tweaks' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        !github.event.pull_request.draft)
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.TESTED_SHA }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Packs the tarball (prepack runs typegen + build), installs it into a
+      # clean consumer with registry peers, and exercises the ./vite entry.
+      - run: node scripts/pack-smoke.mjs
+
+  e2e-playground:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.ref == 'release/tweaks' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        !github.event.pull_request.draft)
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.TESTED_SHA }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The playground's Vite plugin resolves @octane-xplat/tweaks/vite to
+      # dist/ — build before the e2e drives the dev server.
+      - run: pnpm build
+      - run: pnpm --filter playground exec playwright install --with-deps chromium
+      - run: pnpm --filter playground test:e2e
+
+  e2e-panel:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.ref == 'release/tweaks' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        !github.event.pull_request.draft)
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.TESTED_SHA }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm --filter @octane-xplat/tweaks-desktop exec playwright install --with-deps chromium
+      - run: pnpm --filter @octane-xplat/tweaks-desktop test:e2e
+
+  # Evidence records the tested sha and its tree: a merge commit has a new sha
+  # but an identical tree, so tree-keyed artifacts let a clean merge publish
+  # without re-running these lanes. Recorded on the pull request only —
+  # called runs qualify the release in place and record nothing.
+  evidence:
+    runs-on: ubuntu-latest
+    needs: [pack-smoke, e2e-playground, e2e-panel]
+    if: >-
+      always() && github.event_name == 'pull_request' &&
+      github.event.pull_request.head.ref == 'release/tweaks' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.TESTED_SHA }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          # No pnpm in this job — keep the package-manager cache off.
+          package-manager-cache: false
+      - name: Record stable qualification
+        id: evidence
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          tree="$(git rev-parse "$TESTED_SHA^{tree}")"
+          echo "tree=$tree" >> "$GITHUB_OUTPUT"
+          node scripts/verify-release-evidence.ts record --track stable \
+            --jobs "$JOB_RESULTS" --sha "$TESTED_SHA" --tree "$tree" \
+            --run-id "$GITHUB_RUN_ID"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ci-evidence-stable-${{ steps.evidence.outputs.tree }}
+          path: .ci-evidence/ci-evidence.json
+          if-no-files-found: error
+          retention-days: 90

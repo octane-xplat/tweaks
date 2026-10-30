@@ -8,12 +8,15 @@
 	},
 	"scripts": {
 		"build": "pnpm --filter @octane-xplat/tweaks build",
-		"test": "node --test links/octane-config.test.cjs packages/tweaks/test/*.test.mts packages/tweaks/test/vite/*.test.mts apps/desktop/test/*.mts",
+		"test": "node --test links/octane-config.test.cjs packages/tweaks/test/*.test.mts packages/tweaks/test/vite/*.test.mts apps/desktop/test/*.mts scripts/*.test.mjs",
 		"typecheck": "pnpm -r typecheck",
 		"lint": "pnpm --filter playground lint",
 		"dev:octane": "pnpm install --ignore-scripts --lockfile=false --config.pnpmfile=./links/octane.cjs",
 		"dev:published": "./links/dev-published.sh",
 		"test:ios": "node test/ios/run.mjs",
 		"test:android": "node test/android/run.mjs"
+	},
+	"devDependencies": {
+		"yaml": "2.9.1"
 	}
 }
